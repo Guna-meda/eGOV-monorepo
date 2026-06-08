@@ -4,20 +4,29 @@ import { complaints } from '../db/schema/complaint.schema.js';
 import { CreateComplaintDto } from '../types/complaint.types.js';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
-  const [newComplaint] = await db
-    .insert(complaints)
-    .values({
-      originalTitle: data.originalTitle,
-      description: data.description,
-      userId: data.userId,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      // If lat/lng are provided, format them for PostGIS using raw SQL
-      // location: data.longitude && data.latitude ? sql`ST_SetSRID(ST_MakePoint(${data.longitude}, ${data.latitude}), 4326)` : null
-    })
-    .returning();
+  try {
+    const [newComplaint] = await db
+      .insert(complaints)
+      .values({
+        originalTitle: data.originalTitle,
+        description: data.description,
+        userId: data.userId,
+        latitude: data.latitude,
+        longitude: data.longitude,
+      })
+      .returning();
 
-  return newComplaint;
+    return newComplaint;
+  } catch (error: any) {
+    // This will print the actual underlying error from PostgreSQL
+    console.error('============ REAL POSTGRES ERROR ============');
+    console.error('Code:', error.code);       // e.g., '42703' (undefined column) or '42704' (undefined object)
+    console.error('Detail:', error.detail);   // Specific info from Postgres
+    console.error('Hint:', error.hint);       // Helpful suggestions from Postgres
+    console.error('Message:', error.message);
+    console.error('=============================================');
+    throw error;
+  }
 };
 
 export const getAllComplaints = async () => {

@@ -8,6 +8,13 @@
       "when": 1780898747783,
       "tag": "0000_wonderful_daimon_hellstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780908467564,
+      "tag": "0001_clumsy_hex",
+      "breakpoints": true
     }
   ]
 }
