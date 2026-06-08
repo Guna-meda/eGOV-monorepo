@@ -10,79 +10,88 @@ import MapIcon from '@mui/icons-material/Map';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+
+const theme = createTheme(); //customisable theme for entire app, in case we changed theme of the app in the future
 
 export default function MainLayout() {
   const location = useLocation();
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6">
-            Smart Grievance Mapping
-          </Typography>
-        </Toolbar>
-      </AppBar>
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-        }}
-      >
-        <Outlet />
-      </Box>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+        <Box
+          sx={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <AppBar position="static">
+            <Toolbar>
+              <Typography variant="h6">
+                Smart Grievance Mapping
+              </Typography>
+            </Toolbar>
+          </AppBar>
 
-      <BottomNavigation
-        showLabels
-        value={location.pathname}
-      >
-        <BottomNavigationAction
-          label="Home"
-          value="/"
-          icon={<HomeIcon />}
-          component={Link}
-          to="/"
-        />
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 2,
+            }}
+          >
+            <Outlet />
+          </Box>
 
-        <BottomNavigationAction
-          label="Map"
-          value="/map"
-          icon={<MapIcon />}
-          component={Link}
-          to="/map"
-        />
+          <BottomNavigation
+            showLabels
+            value={location.pathname}
+          >
+            <BottomNavigationAction
+              label="Home"
+              value="/"
+              icon={<HomeIcon />}
+              component={Link}
+              to="/"
+            />
 
-        <BottomNavigationAction
-          label="Raise"
-          value="/raise"
-          icon={<AddCircleIcon />}
-          component={Link}
-          to="/raise"
-        />
+            <BottomNavigationAction
+              label="Map"
+              value="/map"
+              icon={<MapIcon />}
+              component={Link}
+              to="/map"
+            />
 
-        <BottomNavigationAction
-          label="Updates"
-          value="/updates"
-          icon={<NotificationsNoneIcon />}
-          component={Link}
-          to="/updates"
-        />
+            <BottomNavigationAction
+              label="Raise"
+              value="/raise"
+              icon={<AddCircleIcon />}
+              component={Link}
+              to="/raise"
+            />
 
-        <BottomNavigationAction
-          label="Me"
-          value="/profile"
-          icon={<AccountCircleIcon />}
-          component={Link}
-          to="/profile"
-        />
-      </BottomNavigation>
-    </Box>
+            <BottomNavigationAction
+              label="Updates"
+              value="/updates"
+              icon={<NotificationsNoneIcon />}
+              component={Link}
+              to="/updates"
+            />
+
+            <BottomNavigationAction
+              label="Me"
+              value="/profile"
+              icon={<AccountCircleIcon />}
+              component={Link}
+              to="/profile"
+            />
+          </BottomNavigation>
+        </Box>
+    </ThemeProvider>
+
   );
 }
