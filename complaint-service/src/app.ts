@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 
 import { errorHandler } from './middlewares/error.middleware.js';
+import complaintRoutes from './routes/complaint.routes.ts';
 
 const app = express();
 
@@ -30,6 +31,11 @@ app.get('/health', (_, res) => {
     status: 'UP',
   });
 });
+
+app.use(
+  '/api/v1/complaints',
+  complaintRoutes
+);
 
 app.use(errorHandler);
 
