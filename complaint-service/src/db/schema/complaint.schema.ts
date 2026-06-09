@@ -18,19 +18,16 @@ export const complaints = pgTable('complaints', {
   frequency: integer('frequency').default(1).notNull(),
   incidentOccurredAt: timestamp('incident_occurred_at'),
   
-  // Foreign Keys
   categoryId: uuid('category_id'),
   subcategoryId: uuid('subcategory_id'),
   customCategory: varchar('custom_category', { length: 255 }),
   customSubcategory: varchar('custom_subcategory', { length: 255 }),
   userId: uuid('user_id').notNull(),
   
-  // Location details (Pure numeric lat/long, no PostGIS tracking)
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
   wardId: uuid('ward_id'),
 
-  // ML Fields
   classificationCategory: varchar('classification_category', { length: 100 }),
   severity: varchar('severity', { length: 50 }),
   sentiment: varchar('sentiment', { length: 50 }),
@@ -38,4 +35,15 @@ export const complaints = pgTable('complaints', {
   status: varchar('status', { length: 50 }).default('Submitted').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// New table based on your design layout
+export const complaintMedia = pgTable('complaint_media', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  complaintId: uuid('complaint_id')
+    .references(() => complaints.id, { onDelete: 'cascade' })
+    .notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileType: varchar('file_type', { length: 50 }).notNull(),
+  uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
 });

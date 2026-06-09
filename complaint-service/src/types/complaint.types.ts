@@ -1,19 +1,19 @@
+export interface MediaDto {
+  fileUrl: string;
+  fileType: string;
+}
+
 export interface CreateComplaintDto {
-  originalTitle: string; // Aligned with database schema
+  originalTitle: string;
   description: string;
-  userId: string;        // Added so repository can read it
+  userId: string;        
   latitude?: number;
   longitude?: number;
+  media?: MediaDto[]; // Added to accept nested media items
 }
 
 export interface UpdateComplaintStatusDto {
-  status:
-    | 'Submitted'
-    | 'Under Review'
-    | 'Assigned'
-    | 'In Progress'
-    | 'Resolved'
-    | 'Rejected';
+  status: ComplaintStatus;
 }
 
 export type ComplaintStatus =
