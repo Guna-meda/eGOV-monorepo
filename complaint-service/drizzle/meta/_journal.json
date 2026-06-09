@@ -15,6 +15,13 @@
       "when": 1780908467564,
       "tag": "0001_clumsy_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780980616341,
+      "tag": "0002_panoramic_fallen_one",
+      "breakpoints": true
     }
   ]
 }

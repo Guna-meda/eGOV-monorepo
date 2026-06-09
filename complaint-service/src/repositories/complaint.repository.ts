@@ -5,6 +5,8 @@ import { CreateComplaintDto } from '../types/complaint.types.js';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   try {
+    console.log('DATA RECEIVED');
+console.log(data);
     const [newComplaint] = await db
       .insert(complaints)
       .values({
@@ -18,13 +20,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
 
     return newComplaint;
   } catch (error: any) {
-    // This will print the actual underlying error from PostgreSQL
-    console.error('============ REAL POSTGRES ERROR ============');
-    console.error('Code:', error.code);       // e.g., '42703' (undefined column) or '42704' (undefined object)
-    console.error('Detail:', error.detail);   // Specific info from Postgres
-    console.error('Hint:', error.hint);       // Helpful suggestions from Postgres
-    console.error('Message:', error.message);
-    console.error('=============================================');
+    console.dir(error, { depth: null });
     throw error;
   }
 };

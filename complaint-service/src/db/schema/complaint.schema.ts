@@ -6,18 +6,7 @@ import {
   timestamp,
   integer,
   doublePrecision,
-  customType,
 } from 'drizzle-orm/pg-core';
-
-// Custom type for PostGIS Geography
-const geography = customType<{ data: string; driverData: string }>({
-  dataType() {
-    return 'geography(Point,4326)';
-  },
-  toDriver(value: string) {
-    return value;
-  },
-});
 
 export const complaints = pgTable('complaints', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -29,20 +18,19 @@ export const complaints = pgTable('complaints', {
   frequency: integer('frequency').default(1).notNull(),
   incidentOccurredAt: timestamp('incident_occurred_at'),
   
-  // Foreign Keys (Assuming you have Category/Subcategory tables)
+  // Foreign Keys
   categoryId: uuid('category_id'),
   subcategoryId: uuid('subcategory_id'),
   customCategory: varchar('custom_category', { length: 255 }),
   customSubcategory: varchar('custom_subcategory', { length: 255 }),
   userId: uuid('user_id').notNull(),
   
-  // Location details
+  // Location details (Pure numeric lat/long, no PostGIS tracking)
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
-  location: geography('location'),
   wardId: uuid('ward_id'),
 
-  // ML Fields (From the whiteboard image)
+  // ML Fields
   classificationCategory: varchar('classification_category', { length: 100 }),
   severity: varchar('severity', { length: 50 }),
   sentiment: varchar('sentiment', { length: 50 }),

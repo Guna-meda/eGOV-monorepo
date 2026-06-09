@@ -4,23 +4,28 @@ import { CreateComplaintDto } from '../types/complaint.types.ts';
 import logger from '../utils/logger.ts';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
-  // 1. Validate based on aligned DTO keys
+  // Check for originalTitle instead of title
   if (!data.originalTitle?.trim()) {
-    throw new ApiError(400, 'Original title is required');
+    throw new ApiError(
+      400,
+      'Title is required'
+    );
   }
 
   if (!data.description?.trim()) {
-    throw new ApiError(400, 'Description is required');
+    throw new ApiError(
+      400,
+      'Description is required'
+    );
   }
 
-  if (!data.userId?.trim()) {
-    throw new ApiError(400, 'User ID is required');
-  }
+  const complaint = await (
+    complaintRepository as any
+  ).createComplaint(data);
 
-  // 2. Interact with repository (no 'any' casts needed now)
-  const complaint = await complaintRepository.createComplaint(data);
-
-  logger.info(`Complaint created: ${complaint.id}`);
+  logger.info(
+    `Complaint created: ${complaint.id}`
+  );
 
   return complaint;
 };

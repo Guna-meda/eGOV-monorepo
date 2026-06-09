@@ -1,10 +1,19 @@
 export interface CreateComplaintDto {
-  originalTitle: string;
+  originalTitle: string; // Aligned with database schema
   description: string;
-  userId: string; // Required based on your schema
-  originalLanguage?: string;
+  userId: string;        // Added so repository can read it
   latitude?: number;
   longitude?: number;
+}
+
+export interface UpdateComplaintStatusDto {
+  status:
+    | 'Submitted'
+    | 'Under Review'
+    | 'Assigned'
+    | 'In Progress'
+    | 'Resolved'
+    | 'Rejected';
 }
 
 export type ComplaintStatus =
@@ -14,7 +23,3 @@ export type ComplaintStatus =
   | 'In Progress'
   | 'Resolved'
   | 'Rejected';
-
-export interface UpdateComplaintStatusDto {
-  status: ComplaintStatus;
-}

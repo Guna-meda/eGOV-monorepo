@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+import "./env.ts";
 
 import app from './app.js';
 
