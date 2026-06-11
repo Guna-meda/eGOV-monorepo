@@ -1,25 +1,27 @@
 from fastapi import APIRouter
 
-from src.api.schemas import (ComplaintRequest,)
-from src.classification.inference import (CategoryInference,)
-from src.classification.subcategory_labels import (assign_subcategory,)
+from src.api.schemas import (
+    ComplaintAnalysisRequest,
+    ComplaintAnalysisResponse
+)
 
 router = APIRouter()
-category_model = CategoryInference("models/category_classifier.pkl")
+
+from predict_complaint import predict_complaint
 
 
-@router.post("/classify")
-def classify(req: ComplaintRequest):
+@router.post("/ai/analyze",response_model=ComplaintAnalysisResponse)
+def analyze_complaint(request: ComplaintAnalysisRequest):
 
-    category = category_model.predict(req.text)
-
-    subcategory = assign_subcategory(
-        req.text,
-        category,
-    )
+    prediction = predict_complaint(request.complaint_text, translate=False)
 
     return {
-        "complaint_id": req.complaint_id,
-        "category": category,
-        "subcategory": subcategory,
+        "complaint_id": request.complaint_id,
+        "category": prediction["category"],
+        "subcategory": prediction["subcategory"],
+        "sentiment": prediction["sentiment"],
+        "severity_score": prediction["severity_score"],
+        "severity_label": prediction["severity_label"],
+        "risk_score": prediction["risk_score"],
+        "risk_label": prediction["risk_label"]
     }
