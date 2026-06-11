@@ -3,6 +3,7 @@ import cors from 'cors';
 
 import { errorHandler } from './middlewares/error.middleware.js';
 import complaintRoutes from './routes/complaint.routes.ts';
+import mediaRoutes from './routes/media.routes.ts';
 
 const app = express();
 
@@ -35,6 +36,11 @@ app.get('/health', (_, res) => {
 app.use(
   '/api/v1/complaints',
   complaintRoutes
+);
+
+app.use(
+  '/api/v1/media',
+  mediaRoutes
 );
 
 app.use(errorHandler);
