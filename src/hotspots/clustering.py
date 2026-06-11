@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
 
-
+#
 def detect_hotspots(df: pd.DataFrame, eps_km: float = 1.5, min_samples: int = 4) -> tuple[pd.DataFrame, pd.DataFrame]:
     enriched = df.copy()
     enriched["hotspot_id"] = "-1"
