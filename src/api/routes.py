@@ -19,9 +19,9 @@ def analyze_complaint(request: ComplaintAnalysisRequest):
         "complaint_id": request.complaint_id,
         "category": prediction["category"],
         "subcategory": prediction["subcategory"],
-        "sentiment": prediction["sentiment"],
+        "sentiment": prediction["sentiment_label"],
         "severity_score": prediction["severity_score"],
         "severity_label": prediction["severity_label"],
-        "risk_score": prediction["risk_score"],
-        "risk_label": prediction["risk_label"]
+        #"risk_score": prediction["risk_score"],
+        #"risk_label": prediction["risk_label"]
     }
