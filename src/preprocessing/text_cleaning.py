@@ -1,34 +1,27 @@
-'''
-USE: Provides a function to clean the raw data.
-'''
-
 import re
+import unicodedata
+
 import pandas as pd
 
 
-def clean_text(text):
-    """
-    Basic complaint text cleaning
-    """
+SPACE_RE = re.compile(r"\s+")
+KEEP_RE = re.compile(r"[^a-z0-9\s.,;:!?/-]")
 
-    if pd.isna(text):
-        return ""
 
-    text = str(text).lower()
+def normalize_text(value: object) -> str:
+    text = "" if pd.isna(value) else str(value)
+    text = unicodedata.normalize("NFKC", text).lower()
+    text = KEEP_RE.sub(" ", text)
+    return SPACE_RE.sub(" ", text).strip()
 
-    # Remove URLs
-    text = re.sub(r"http\S+|www\S+", "", text)
 
-    # Remove email addresses
-    text = re.sub(r"\S+@\S+", "", text)
-
-    # Remove 10-digit phone numbers
-    text = re.sub(r"\b\d{10}\b", "", text)
-
-    # Remove special characters
-    text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
-
-    # Remove extra spaces
-    text = re.sub(r"\s+", " ", text)
-
-    return text.strip()
+def build_text_frame(intake: pd.DataFrame, text_asr: pd.DataFrame) -> pd.DataFrame:
+    primary = text_asr[text_asr["is_primary"].astype(str).str.lower().eq("true")].copy()
+    if primary.empty:
+        primary = text_asr.copy()
+    primary = primary.sort_values(["complaint_id", "asr_attempt_id"]).drop_duplicates("complaint_id")
+    merged = intake.merge(primary, on="complaint_id", how="left")
+    merged["processed_text"] = merged["text_raw"].map(normalize_text)
+    merged["text_length"] = merged["processed_text"].str.len().fillna(0).astype(int)
+    merged["token_count"] = merged["processed_text"].str.split().map(lambda tokens: len(tokens) if isinstance(tokens, list) else 0)
+    return merged
