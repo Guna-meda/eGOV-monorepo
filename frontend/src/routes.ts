@@ -6,6 +6,7 @@ import Raise from './pages/Raise'
 import Updates from './pages/Updates'
 import Profile from './pages/Profile'
 import ErrorPage from "./pages/ErrorPage"
+import {grievanceAction} from "./actions/grievanceUploadAction"
 
 const routes:RouteObject[] = [
     {
@@ -23,7 +24,8 @@ const routes:RouteObject[] = [
             },
             {
                 path: 'raise',
-                Component: Raise
+                Component: Raise,
+                action: grievanceAction
             },
             {
                 path: 'updates',
