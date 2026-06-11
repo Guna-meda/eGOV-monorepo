@@ -7,7 +7,7 @@ import joblib
 from src.classification.rules import CATEGORY_RULES, classify_by_rules
 from src.preprocessing.text_cleaning import normalize_text
 from src.preprocessing.translation import translate_to_english
-from src.sentiment.sentiment import score_sentiment, score_urgency
+from src.sentiment.sentiment import score_sentiment
 from src.severity.severity_engine import DANGER_CATEGORIES
 from src.utils.config import MODELS_DIR
 
@@ -71,13 +71,15 @@ def predict_complaint(
         else:
             model_used = "rules_low_ml_confidence"
 
-    subcategory = rule_subcategory if category == rule_category else _default_subcategory(category)
+    subcategory = (
+        rule_subcategory
+        if category == rule_category
+        else _default_subcategory(category)
+    )
     sentiment_label, sentiment_score = score_sentiment(processed_text)
-    urgency_label, urgency_score = score_urgency(processed_text)
-
     danger_weight = 0.16 if category in DANGER_CATEGORIES else 0.0
     strong_negative_weight = 0.08 if sentiment_label == "highly_negative" else 0.0
-    severity_score = round(min(1.0, 0.18 + danger_weight + 0.35 * urgency_score + strong_negative_weight), 3)
+    severity_score = round(min(1.0, 0.18 + danger_weight + strong_negative_weight), 3)
 
     return {
         "input_text": text,
@@ -90,8 +92,6 @@ def predict_complaint(
         "category_confidence": category_confidence,
         "sentiment_label": sentiment_label,
         "sentiment_score": sentiment_score,
-        "urgency_label": urgency_label,
-        "urgency_score": urgency_score,
         "severity_label": _severity_label(severity_score),
         "severity_score": severity_score,
     }
@@ -100,18 +100,42 @@ def predict_complaint(
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="Predict ML labels for one grievance complaint string.")
+    parser = argparse.ArgumentParser(
+        description="Predict ML labels for one grievance complaint string."
+    )
     parser.add_argument("text", nargs="*", help="Complaint text to classify.")
-    parser.add_argument("--translate", action="store_true", help="Translate Hindi/Marathi/Hinglish text to English before prediction.")
-    parser.add_argument("--lang", default="hi", choices=["hi", "mr"], help="Source language hint for translation.")
+    parser.add_argument(
+        "--translate",
+        action="store_true",
+        help="Translate Hindi/Marathi/Hinglish text to English before prediction.",
+    )
+    parser.add_argument(
+        "--lang",
+        default="hi",
+        choices=["hi", "mr"],
+        help="Source language hint for translation.",
+    )
     parser.add_argument(
         "--translation-backend",
         default="auto",
-        choices=["auto", "helsinki", "seamless", "indictrans2", "aksharamukha", "phrase"],
+        choices=[
+            "auto",
+            "helsinki",
+            "seamless",
+            "indictrans2",
+            "aksharamukha",
+            "phrase",
+        ],
         help="Translation/transliteration backend.",
     )
-    parser.add_argument("--no-pretrained-translation", action="store_true", help="Use only Hinglish phrase normalization before prediction.")
-    parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
+    parser.add_argument(
+        "--no-pretrained-translation",
+        action="store_true",
+        help="Use only Hinglish phrase normalization before prediction.",
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Print machine-readable JSON."
+    )
     args = parser.parse_args()
 
     complaint_text = " ".join(args.text).strip()
@@ -123,7 +147,9 @@ def main() -> None:
         translate=args.translate,
         lang=args.lang,
         use_pretrained_translation=not args.no_pretrained_translation,
-        translation_backend="phrase" if args.no_pretrained_translation else args.translation_backend,
+        translation_backend=(
+            "phrase" if args.no_pretrained_translation else args.translation_backend
+        ),
     )
     if args.json:
         print(json.dumps(prediction, indent=2))
@@ -136,9 +162,12 @@ def main() -> None:
         print(f"English text : {prediction['translated_text']}")
     print(f"Subcategory  : {prediction['subcategory']}")
     print(f"Confidence   : {prediction['category_confidence']}")
-    print(f"Sentiment    : {prediction['sentiment_label']} ({prediction['sentiment_score']})")
-    print(f"Urgency      : {prediction['urgency_label']} ({prediction['urgency_score']})")
-    print(f"Severity     : {prediction['severity_label']} ({prediction['severity_score']})")
+    print(
+        f"Sentiment    : {prediction['sentiment_label']} ({prediction['sentiment_score']})"
+    )
+    print(
+        f"Severity     : {prediction['severity_label']} ({prediction['severity_score']})"
+    )
     print(f"Model used   : {prediction['model_used']}")
 
 
