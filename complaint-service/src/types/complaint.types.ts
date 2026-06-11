@@ -1,15 +1,16 @@
 export interface MediaDto {
   fileUrl: string;
   fileType: string;
+  providerFileId?: string;
 }
 
 export interface CreateComplaintDto {
   originalTitle: string;
   description: string;
-  userId: string;        
+  userId: string;
   latitude?: number;
   longitude?: number;
-  media?: MediaDto[]; // Added to accept nested media items
+  media?: MediaDto[];
 }
 
 export interface UpdateComplaintStatusDto {

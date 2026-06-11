@@ -1,0 +1,1 @@
+ALTER TABLE "complaint_media" ADD COLUMN "provider_file_id" varchar(255);

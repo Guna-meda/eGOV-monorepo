@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../db/index.js';
-import { complaints, complaintMedia } from '../db/schema/complaint.schema.js';
-import { CreateComplaintDto } from '../types/complaint.types.js';
+import { eq } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { complaints, complaintMedia } from "../db/schema/complaint.schema.js";
+import { CreateComplaintDto } from "../types/complaint.types.js";
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   try {
-    console.log('DATA RECEIVED FOR TRANSACTION:');
+    console.log("DATA RECEIVED FOR TRANSACTION:");
     console.log(data);
 
     // Using Drizzle transaction block
@@ -29,6 +29,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
           complaintId: newComplaint.id,
           fileUrl: item.fileUrl,
           fileType: item.fileType,
+          providerFileId: item.providerFileId,
         }));
 
         savedMedia = await tx

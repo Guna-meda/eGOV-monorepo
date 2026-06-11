@@ -37,13 +37,29 @@ export const complaints = pgTable('complaints', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// New table based on your design layout
 export const complaintMedia = pgTable('complaint_media', {
   id: uuid('id').defaultRandom().primaryKey(),
+
   complaintId: uuid('complaint_id')
-    .references(() => complaints.id, { onDelete: 'cascade' })
+    .references(() => complaints.id, {
+      onDelete: 'cascade',
+    })
     .notNull(),
+
   fileUrl: text('file_url').notNull(),
-  fileType: varchar('file_type', { length: 50 }).notNull(),
-  uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
+
+  fileType: varchar('file_type', {
+    length: 50,
+  }).notNull(),
+
+  providerFileId: varchar(
+    'provider_file_id',
+    {
+      length: 255,
+    }
+  ),
+
+  uploadedAt: timestamp('uploaded_at')
+    .defaultNow()
+    .notNull(),
 });
