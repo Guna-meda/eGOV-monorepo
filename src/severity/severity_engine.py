@@ -1,50 +1,73 @@
+import joblib
 import pandas as pd
+from pathlib import Path
 
-DANGER_CATEGORIES = { "water",
-    "garbage",
-    "overflow",
-    "drain",
-    "blocked",
-    "sewage",
-    "road",
-    "damaged",
-    "pothole",
-    "electricity",
-    "streetlight",
-    "fire",
-    "flood",
-    "broken",
-    "leakage"}
+
+MODEL_PATH = (
+    Path(__file__)
+    .resolve()
+    .parents[2]
+    / "models"
+    / "severity_model"
+    / "catboost_severity.pkl"
+)
+
+
+model = joblib.load(MODEL_PATH)
 
 
 def _label(score: float) -> str:
-    if score >= 0.8:
+
+    if score >= 0.85:
         return "CRITICAL"
-    if score >= 0.6:
+
+    if score >= 0.65:
         return "HIGH"
-    if score >= 0.35:
+
+    if score >= 0.40:
         return "MEDIUM"
+
     return "LOW"
 
 
-def add_severity(df: pd.DataFrame, workflow_features: pd.DataFrame) -> pd.DataFrame:
-    enriched = df.merge(workflow_features, on="complaint_id", how="left")
-    for column in ["has_escalation", "is_unresolved", "sla_breached", "reopened", "resolution_hours"]:
-        enriched[column] = enriched[column].fillna(0)
+def predict_severity(
+    category: str,
+    subcategory: str,
+    category_confidence: float,
+    ward_complaint_density: int,
+    category_geohash_density: int,
+    geohash_density: int,
+    ward_category_density: int,
+    has_escalation: int,
+    sla_hours: float
+) -> dict:
 
-    category_weight = enriched["category"].isin(DANGER_CATEGORIES).astype(float) * 0.16
-    density = (enriched["category_geohash_density"].fillna(0) / enriched["category_geohash_density"].fillna(0).max()).fillna(0)
-    unresolved_age = (enriched["resolution_hours"].fillna(0) / 120).clip(0, 1)
+    features = pd.DataFrame(
+        [
+            {
+                "category": category,
+                "subcategory": subcategory,
+                "category_confidence": category_confidence,
+                "ward_complaint_density": ward_complaint_density,
+                "category_geohash_density": category_geohash_density,
+                "geohash_density": geohash_density,
+                "ward_category_density": ward_category_density,
+                "has_escalation": has_escalation,
+                "sla_hours": sla_hours,
+            }
+        ]
+    )
 
-    enriched["severity_score"] = (
-        0.18
-        + category_weight
-        + 0.22 * enriched["urgency_score"].fillna(0)
-        + 0.15 * density
-        + 0.12 * enriched["has_escalation"].astype(float)
-        + 0.13 * enriched["sla_breached"].astype(float)
-        + 0.08 * enriched["is_unresolved"].astype(float)
-        + 0.05 * unresolved_age
-    ).clip(0, 1).round(3)
-    enriched["severity_label"] = enriched["severity_score"].map(_label)
-    return enriched
+    score = float(
+        model.predict(features)[0]
+    )
+
+    score = round(
+        max(0.0, min(score, 1.0)),
+        3
+    )
+
+    return {
+        "severity_score": score,
+        "severity_label": _label(score),
+    }
