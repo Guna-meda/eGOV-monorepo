@@ -1,6 +1,7 @@
 export interface MediaDto {
   fileUrl: string;
   fileType: string;
+  providerFileId: string;
 }
 
 export interface CreateComplaintDto {

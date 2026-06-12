@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { v2 as cloudinary } from "cloudinary";
 
 export const generateUploadSignature =
   async () => {
@@ -8,12 +8,13 @@ export const generateUploadSignature =
 
     const folder = 'complaints';
 
-    const signature = crypto
-      .createHash('sha1')
-      .update(
-        `folder=${folder}&timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`
-      )
-      .digest('hex');
+    const signature = cloudinary.utils.api_sign_request(
+      {
+        folder,
+        timestamp,
+      },
+      process.env.CLOUDINARY_API_SECRET!
+    );
 
     return {
       timestamp,
