@@ -13,6 +13,20 @@ export interface CreateComplaintDto {
   media?: MediaDto[];
 }
 
+export interface MlAnalysisDto {
+  category: string;
+  subcategory: string;
+  sentiment: string;
+
+  severityScore: number;
+  severityLabel: string;
+
+  riskScore: number;
+  riskLabel: string;
+
+  mlStatus: string;
+}
+
 export interface UpdateComplaintStatusDto {
   status: ComplaintStatus;
 }

@@ -5,12 +5,7 @@ import { CreateComplaintDto } from "../types/complaint.types.js";
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   try {
-    console.log("DATA RECEIVED FOR TRANSACTION:");
-    console.log(data);
-
-    // Using Drizzle transaction block
     return await db.transaction(async (tx) => {
-      // 1. Insert the primary Complaint record
       const [newComplaint] = await tx
         .insert(complaints)
         .values({
@@ -22,9 +17,9 @@ export const createComplaint = async (data: CreateComplaintDto) => {
         })
         .returning();
 
-      // 2. Map and insert Media records if they are provided
       let savedMedia: any[] = [];
-      if (data.media && data.media.length > 0) {
+
+      if (data.media?.length) {
         const mediaValues = data.media.map((item) => ({
           complaintId: newComplaint.id,
           fileUrl: item.fileUrl,
@@ -38,13 +33,12 @@ export const createComplaint = async (data: CreateComplaintDto) => {
           .returning();
       }
 
-      // 3. Return the consolidated response payload
       return {
         ...newComplaint,
         media: savedMedia,
       };
     });
-  } catch (error: any) {
+  } catch (error) {
     console.dir(error, { depth: null });
     throw error;
   }
@@ -61,4 +55,52 @@ export const getComplaintById = async (id: string) => {
     .where(eq(complaints.id, id));
 
   return complaint;
+};
+
+export const updateMlAnalysis = async (
+  complaintId: string,
+  data: {
+    category: string;
+    subcategory: string;
+    sentiment: string;
+    severityScore: number;
+    severityLabel: string;
+    riskScore: number;
+    riskLabel: string;
+    mlStatus: string;
+  }
+) => {
+  const [updatedComplaint] = await db
+    .update(complaints)
+    .set({
+      category: data.category,
+      subcategory: data.subcategory,
+      sentiment: data.sentiment,
+      severityScore: data.severityScore,
+      severityLabel: data.severityLabel,
+      riskScore: data.riskScore,
+      riskLabel: data.riskLabel,
+      mlStatus: data.mlStatus,
+      updatedAt: new Date(),
+    })
+    .where(eq(complaints.id, complaintId))
+    .returning();
+
+  return updatedComplaint;
+};
+
+export const updateMlStatus = async (
+  complaintId: string,
+  status: string
+) => {
+  const [updatedComplaint] = await db
+    .update(complaints)
+    .set({
+      mlStatus: status,
+      updatedAt: new Date(),
+    })
+    .where(eq(complaints.id, complaintId))
+    .returning();
+
+  return updatedComplaint;
 };

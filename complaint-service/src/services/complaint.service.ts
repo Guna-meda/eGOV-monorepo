@@ -2,6 +2,7 @@ import * as complaintRepository from '../repositories/complaint.repository.ts';
 import { ApiError } from '../utils/ApiError.ts';
 import { CreateComplaintDto } from '../types/complaint.types.ts';
 import logger from '../utils/logger.ts';
+import { complaintQueue } from '../queues/complaint.queue.ts';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   // Check for originalTitle instead of title
@@ -22,6 +23,13 @@ export const createComplaint = async (data: CreateComplaintDto) => {
   const complaint = await (
     complaintRepository as any
   ).createComplaint(data);
+
+  await complaintQueue.add(
+  'classify-complaint',
+  {
+    complaintId: complaint.id,
+  }
+);
 
   logger.info(
     `Complaint created: ${complaint.id}`
