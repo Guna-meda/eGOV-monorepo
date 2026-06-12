@@ -6,6 +6,7 @@ import {
   timestamp,
   integer,
   doublePrecision,
+  real,
 } from 'drizzle-orm/pg-core';
 
 export const complaints = pgTable('complaints', {
@@ -18,19 +19,60 @@ export const complaints = pgTable('complaints', {
   frequency: integer('frequency').default(1).notNull(),
   incidentOccurredAt: timestamp('incident_occurred_at'),
   
-  categoryId: uuid('category_id'),
-  subcategoryId: uuid('subcategory_id'),
-  customCategory: varchar('custom_category', { length: 255 }),
-  customSubcategory: varchar('custom_subcategory', { length: 255 }),
   userId: uuid('user_id').notNull(),
   
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
   wardId: uuid('ward_id'),
 
-  classificationCategory: varchar('classification_category', { length: 100 }),
-  severity: varchar('severity', { length: 50 }),
-  sentiment: varchar('sentiment', { length: 50 }),
+category: varchar("category", {
+  length: 100,
+}),
+
+subcategory: varchar(
+  "subcategory",
+  {
+    length: 100,
+  }
+),
+
+sentiment: varchar(
+  "sentiment",
+  {
+    length: 50,
+  }
+),
+
+severityScore: real(
+  "severity_score"
+),
+
+severityLabel: varchar( 
+  "severity_label",
+  {
+    length: 50,
+  }
+),
+
+riskScore: real(
+  "risk_score"
+),
+
+riskLabel: varchar(
+  "risk_label",
+  {
+    length: 50,
+  }
+),
+
+mlStatus: varchar(
+  "ml_status",
+  {
+    length: 50,
+  }
+)
+  .default("PENDING")
+  .notNull(),
 
   status: varchar('status', { length: 50 }).default('Submitted').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
