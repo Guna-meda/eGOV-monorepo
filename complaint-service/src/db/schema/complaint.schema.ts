@@ -6,8 +6,14 @@ import {
   timestamp,
   integer,
   doublePrecision,
+  customType
 } from 'drizzle-orm/pg-core';
 
+const geometry = customType<{ data: string }>({
+    dataType() {
+        return 'geometry(Point,4326)';
+    },
+});
 export const complaints = pgTable('complaints', {
   id: uuid('id').defaultRandom().primaryKey(),
   originalTitle: varchar('original_title', { length: 255 }).notNull(),
@@ -26,6 +32,7 @@ export const complaints = pgTable('complaints', {
   
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
+  location: geometry('location'),
   wardId: uuid('ward_id'),
 
   classificationCategory: varchar('classification_category', { length: 100 }),

@@ -1,7 +1,8 @@
 import * as complaintRepository from '../repositories/complaint.repository.ts';
 import { ApiError } from '../utils/ApiError.ts';
-import { CreateComplaintDto } from '../types/complaint.types.ts';
+import { CreateComplaintDto, Bounds } from '../types/complaint.types.ts';
 import logger from '../utils/logger.ts';
+
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   // Check for originalTitle instead of title
@@ -20,7 +21,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
   }
 
   const complaint = await (
-    complaintRepository as any
+    complaintRepository
   ).createComplaint(data);
 
   logger.info(
@@ -43,3 +44,12 @@ export const getComplaintById = async (id: string) => {
 
   return complaint;
 };
+
+export const getComplaintsInBounds = async (bounds:Bounds)=>{
+  console.log('Bounds received in complaint service', bounds)
+  if(!bounds.north || !bounds.south || !bounds.east || !bounds.west) throw new ApiError(400,'Bounds not existing!');
+  const complaints = await complaintRepository.getComplaintsInBounds(bounds);
+  
+  console.log('Complaints!')
+  return complaints;
+}

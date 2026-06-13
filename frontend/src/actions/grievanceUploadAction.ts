@@ -15,6 +15,9 @@ export async function grievanceAction({ request }: ActionFunctionArgs) {
       body: JSON.stringify(data),
   });
 
-  if (!res.ok) return { ok: false, message: await res.text() };
+
+  const response = await res.json()
+  if (!res.ok) return { ok: false, message: response.message };
+  console.log(response)
   return { ok: true };
 }

@@ -66,3 +66,43 @@ export const getComplaintById =
       );
     }
   );
+
+export const getComplaintsInBounds= async  (
+    req: Request,
+    res: Response
+): Promise<void> =>{
+    try {
+        const north = Number(req.query.north);
+        const south = Number(req.query.south);
+        const east = Number(req.query.east);
+        const west = Number(req.query.west);
+
+        if ([north, south, east, west].some(Number.isNaN)) {
+            res.status(400).json({
+                error: 'north, south, east and west query params are required',
+            });
+            return;
+        }
+
+        const complaints = await complaintService.getComplaintsInBounds({
+            north,
+            south,
+            east,
+            west,
+        });
+
+        
+      res.status(200).json(
+        new ApiResponse(
+          200,
+          complaints,
+          'Complaints in boundary fetched successfully'
+        ))
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'Failed to fetch complaints',
+        });
+    }
+}
