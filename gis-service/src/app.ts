@@ -1,10 +1,9 @@
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
-
-
+import { errorHandler } from './middlewares/error.middleware.js';
+import gisRoutes from './routes/gis.routes.ts';
 
 const app: Application = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
@@ -32,4 +31,10 @@ app.get('/health', (_, res) => {
   });
 });
 
+app.use(
+  '/api/v1/gis',
+  gisRoutes
+);
+
+app.use(errorHandler);
 export default app;
