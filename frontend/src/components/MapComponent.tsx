@@ -1,6 +1,7 @@
-import { MapContainer, TileLayer , Marker,Popup, useMap} from 'react-leaflet'
+import { MapContainer, TileLayer , Marker,Popup, useMap, GeoJSON, LayersControl} from 'react-leaflet'
 import {useState, useEffect} from 'react'
 import type { Dispatch, SetStateAction } from 'react';
+import {useLoaderData} from 'react-router'
 
 interface Complaint{
     id:string;
@@ -17,8 +18,8 @@ function MapEvents({ setComplaints }: MapEventsProps) {
     useEffect(() => {
         const handleMoveEnd = async () => {
             const boundsObject = map.getBounds();
-            const BASE = import.meta.env.VITE_API_HOST ?? "localhost";
-            const PORT = import.meta.env.VITE_API_PORT ?? "5001";
+            const BASE = import.meta.env.VITE_CMP_API_HOST ?? "localhost";
+            const PORT = import.meta.env.VITE_CMP_API_PORT ?? "5001";
             console.log(boundsObject);
             try{
                 const url = new URL(`http://${BASE}:${PORT}/api/v1/complaints/complaintsInBounds`);
@@ -57,6 +58,9 @@ function MapEvents({ setComplaints }: MapEventsProps) {
 export default function MapComponent(){
     const [location, setLocation] = useState({lat:0, lng:0})
     const [complaints, setComplaints] = useState<Complaint[]>([]);
+    const geoJson = useLoaderData()
+
+    console.log('The geojson object: ', geoJson)
     useEffect(()=>{
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -71,10 +75,30 @@ export default function MapComponent(){
         <>
             {location.lat && location.lng &&           
                     <MapContainer center={[location.lat, location.lng]} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
+                        <LayersControl position="topright">
+                            <LayersControl.BaseLayer checked name="OpenStreetMap">
+                                <TileLayer
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                />
+                            </LayersControl.BaseLayer>
+
+                            {geoJson && (
+                                <LayersControl.Overlay checked name="Ward Boundaries">
+                                    <GeoJSON
+                                        data={geoJson}
+                                        style={{ color: "#2563eb", weight: 1.5, fillOpacity: 0.1 , fillRule: 'nonzero' }}
+                                        onEachFeature={(feature, layer) => {
+                                            layer.on('click', () => {
+                                                const { ward_name, ward_id, Corporation } = feature.properties;
+                                                console.log("Clicked ward:", { ward_name, ward_id, Corporation });
+                                            });
+                                        }}
+                                    />
+                                </LayersControl.Overlay>
+                            )}
+                        </LayersControl>
+
                         <MapEvents setComplaints={setComplaints}/>
                         <Marker position={[location.lat, location.lng]}>
                             <Popup>

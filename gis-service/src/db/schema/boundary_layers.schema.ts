@@ -10,7 +10,7 @@ import {
 
 const geometry = customType<{ data: string }>({
   dataType() {
-    return 'geometry(MULTIPOLYGON,4326)';
+    return 'geometry';
   },
 })
 export const boundary_layers = pgTable('boundary_layers',{

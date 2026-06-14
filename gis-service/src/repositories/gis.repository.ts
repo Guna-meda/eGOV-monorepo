@@ -6,26 +6,19 @@ import type {BoundaryLayerData} from "../types/gis.types.ts"
 export const createBoundaryLayer = async(file:Express.Multer.File, data: BoundaryLayerData)=>{
     const geojson = JSON.parse(fs.readFileSync(file.path, "utf-8"));
 
-    console.log("the geojson object: ", geojson)
     try{
         await db.transaction(async (tx) => {
         for (const feature of geojson.features) {
-            await tx.execute(sql`
+        await tx.execute(sql`
             INSERT INTO boundary_layers (city, layer_type, level, properties, geom)
             VALUES (
                 ${data.city},
                 ${data.layerType},
                 ${data.level},
-                ${feature.properties},
-                ST_ReducePrecision(
-                ST_Simplify(
-                    ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(feature.geometry)}), 4326),
-                    0.0001
-                ),
-                0.00001
-                )
+                ${JSON.stringify(feature.properties)},
+                ST_SetSRID(ST_Multi(ST_GeomFromGeoJSON(${JSON.stringify(feature.geometry)})), 4326)
             )
-            `);
+        `);
         }
         });
         return {
