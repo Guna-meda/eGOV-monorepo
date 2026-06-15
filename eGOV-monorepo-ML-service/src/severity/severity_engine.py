@@ -4,27 +4,37 @@ from pathlib import Path
 
 
 MODEL_PATH = (
-    Path(__file__)
-    .resolve()
-    .parents[2]
+    Path(__file__).resolve().parents[2]
     / "models"
     / "severity_model"
     / "catboost_severity.pkl"
 )
 
+severity_model = joblib.load(MODEL_PATH)
 
-model = joblib.load(MODEL_PATH)
+
+FEATURE_COLUMNS = [
+    "category",
+    "subcategory",
+    "category_confidence",
+    "ward_complaint_density",
+    "category_geohash_density",
+    "geohash_density",
+    "ward_category_density",
+    "has_escalation",
+    "sla_hours",
+]
 
 
-def _label(score: float) -> str:
+def _severity_label(score: float) -> str:
 
     if score >= 0.85:
         return "CRITICAL"
 
-    if score >= 0.65:
+    elif score >= 0.65:
         return "HIGH"
 
-    if score >= 0.40:
+    elif score >= 0.40:
         return "MEDIUM"
 
     return "LOW"
@@ -39,27 +49,27 @@ def predict_severity(
     geohash_density: int,
     ward_category_density: int,
     has_escalation: int,
-    sla_hours: float
+    sla_hours: float,
 ) -> dict:
 
-    features = pd.DataFrame(
-        [
-            {
-                "category": category,
-                "subcategory": subcategory,
-                "category_confidence": category_confidence,
-                "ward_complaint_density": ward_complaint_density,
-                "category_geohash_density": category_geohash_density,
-                "geohash_density": geohash_density,
-                "ward_category_density": ward_category_density,
-                "has_escalation": has_escalation,
-                "sla_hours": sla_hours,
-            }
-        ]
-    )
+    features = pd.DataFrame([
+        {
+            "category": str(category).lower(),
+            "subcategory": str(subcategory).lower(),
+            "category_confidence": float(category_confidence),
+            "ward_complaint_density": int(ward_complaint_density),
+            "category_geohash_density": int(category_geohash_density),
+            "geohash_density": int(geohash_density),
+            "ward_category_density": int(ward_category_density),
+            "has_escalation": int(has_escalation),
+            "sla_hours": float(sla_hours),
+        }
+    ])
+
+    features = features[FEATURE_COLUMNS]
 
     score = float(
-        model.predict(features)[0]
+        severity_model.predict(features)[0]
     )
 
     score = round(
@@ -69,5 +79,5 @@ def predict_severity(
 
     return {
         "severity_score": score,
-        "severity_label": _label(score),
+        "severity_label": _severity_label(score),
     }

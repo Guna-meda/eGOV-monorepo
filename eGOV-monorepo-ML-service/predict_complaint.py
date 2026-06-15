@@ -8,10 +8,107 @@ from src.classification.rules import CATEGORY_RULES, classify_by_rules
 from src.preprocessing.text_cleaning import normalize_text
 from src.preprocessing.translation import translate_to_english
 from src.sentiment.sentiment import score_sentiment
-from src.severity.severity_engine import DANGER_CATEGORIES
+from src.severity.severity_engine import predict_severity
 from src.utils.config import MODELS_DIR
 
+def check_critical_keywords(text: str):
 
+    text = text.lower()
+
+    extreme_keywords = [
+
+        # Death / Fatality
+        "death",
+        "dead",
+        "died",
+        "fatal",
+        "fatality",
+        "killed",
+        "loss of life",
+
+        # Severe Electrical
+        "electrocution",
+        "electric shock",
+
+        # Severe Disasters
+        "explosion",
+        "blast",
+
+        # Structural Failure
+        "building collapse",
+        "bridge collapse",
+        "wall collapse",
+
+    ]
+
+    high_risk_keywords = [
+
+        # Injuries
+        "injured",
+        "injury",
+        "serious injury",
+        "life threatening",
+
+        # Electrical Hazards
+        "live wire",
+        "exposed wire",
+        "open transformer",
+        "open electrical cabinet",
+        "high voltage",
+
+        # Fire
+        "fire",
+        "burning",
+        "short circuit",
+
+        # Flooding
+        "flood",
+        "flooding",
+        "waterlogging",
+
+        # Public Safety
+        "accident",
+        "major accident",
+        "road accident",
+        "public danger",
+        "hazard",
+        "unsafe",
+        "emergency",
+
+        # Sensitive Locations
+        "hospital",
+        "school",
+        "college",
+        "children",
+
+        # Health Risks
+        "sewage overflow",
+        "contaminated water",
+        "disease outbreak",
+        "epidemic",
+        "toxic",
+        "poisonous",
+    ]
+
+    # CRITICAL LEVEL
+
+    if any(keyword in text for keyword in extreme_keywords):
+
+        return {
+            "severity_score": 1.0,
+            "severity_label": "CRITICAL"
+        }
+
+    # HIGH LEVEL
+
+    if any(keyword in text for keyword in high_risk_keywords):
+
+        return {
+            "severity_score": 0.85,
+            "severity_label": "HIGH"
+        }
+
+    return None
 def _default_subcategory(category: str) -> str:
     subcategories = CATEGORY_RULES.get(category, {})
     return next(iter(subcategories), "information_request")
@@ -22,16 +119,6 @@ def _load_category_model():
     if not model_path.exists():
         return None
     return joblib.load(model_path)
-
-
-def _severity_label(score: float) -> str:
-    if score >= 0.8:
-        return "CRITICAL"
-    if score >= 0.6:
-        return "HIGH"
-    if score >= 0.35:
-        return "MEDIUM"
-    return "LOW"
 
 
 def predict_complaint(
@@ -71,11 +158,57 @@ def predict_complaint(
         else:
             model_used = "rules_low_ml_confidence"
 
-    subcategory = (rule_subcategory if category == rule_category else _default_subcategory(category))
+        subcategory = (
+        rule_subcategory
+        if category == rule_category
+        else _default_subcategory(category)
+    )
+
     sentiment_label, sentiment_score = score_sentiment(processed_text)
-    danger_weight = 0.16 if category in DANGER_CATEGORIES else 0.0
-    strong_negative_weight = 0.08 if sentiment_label == "highly_negative" else 0.0
-    severity_score = round(min(1.0, 0.18 + danger_weight + strong_negative_weight), 3)
+
+    critical_result = check_critical_keywords(processed_text)
+
+    if critical_result is not None:
+
+        severity_score = critical_result["severity_score"]
+        severity_label = critical_result["severity_label"]
+
+    else:
+
+        severity_result = predict_severity(
+            category=category,
+            subcategory=subcategory,
+            category_confidence=category_confidence,
+            ward_complaint_density=0,
+            category_geohash_density=0,
+            geohash_density=0,
+            ward_category_density=0,
+            has_escalation=0,
+            sla_hours=24.0
+        )
+
+        severity_score = severity_result["severity_score"]
+        severity_label = severity_result["severity_label"]
+
+    return {
+        "input_text": text,
+        "translated_text": text_for_model if translate else "",
+        "translation_model": (
+            translation["translation_model"]
+            if translation else ""
+        ),
+        "processed_text": processed_text,
+        "model_used": model_used,
+        "category": category,
+        "subcategory": subcategory,
+        "category_confidence": category_confidence,
+        "sentiment_label": sentiment_label,
+        "sentiment_score": sentiment_score,
+        "severity_label": severity_label,
+        "severity_score": severity_score,
+    }       
+    severity_score = severity_result["severity_score"]
+    severity_label = severity_result["severity_label"]
 
     return {
         "input_text": text,
@@ -88,7 +221,7 @@ def predict_complaint(
         "category_confidence": category_confidence,
         "sentiment_label": sentiment_label,
         "sentiment_score": sentiment_score,
-        "severity_label": _severity_label(severity_score),
+        "severity_label": severity_label,
         "severity_score": severity_score,
     }
 
