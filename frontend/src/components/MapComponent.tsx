@@ -2,6 +2,8 @@ import { MapContainer, TileLayer , Marker,Popup, useMap, GeoJSON, LayersControl}
 import {useState, useEffect} from 'react'
 import type { Dispatch, SetStateAction } from 'react';
 import {useLoaderData} from 'react-router'
+import PanToCurrentLocation from "./PanToCurrentLocation"
+import L from 'leaflet';
 
 interface Complaint{
     id:string;
@@ -14,7 +16,6 @@ interface MapEventsProps {
 }
 function MapEvents({ setComplaints }: MapEventsProps) {
     const map = useMap();
-
     useEffect(() => {
         const handleMoveEnd = async () => {
             const boundsObject = map.getBounds();
@@ -58,6 +59,8 @@ function MapEvents({ setComplaints }: MapEventsProps) {
 export default function MapComponent(){
     const [location, setLocation] = useState({lat:0, lng:0})
     const [complaints, setComplaints] = useState<Complaint[]>([]);
+    const [markerPosition, setMarkerPosition] = useState<L.LatLng | null>(null);
+
     const geoJson = useLoaderData()
 
     console.log('The geojson object: ', geoJson)
@@ -100,6 +103,7 @@ export default function MapComponent(){
                         </LayersControl>
 
                         <MapEvents setComplaints={setComplaints}/>
+                        <PanToCurrentLocation setLocationMarker={setMarkerPosition} />
                         <Marker position={[location.lat, location.lng]}>
                             <Popup>
                             You are here!
@@ -110,6 +114,7 @@ export default function MapComponent(){
                                 <Popup>{complaint.original_title}</Popup>
                             </Marker>
                         )}
+                        {markerPosition && <Marker position={markerPosition} />}
                     </MapContainer>
             }
         </>
