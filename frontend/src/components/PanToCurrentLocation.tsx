@@ -1,10 +1,7 @@
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-interface PanToCurrentLocationProps {
-  setLocationMarker?: (latLng: L.LatLng) => void;
-}
-export default function PanToCurrentLocation({ setLocationMarker }: PanToCurrentLocationProps) {
+export default function PanToCurrentLocation() {
   const map = useMap();
 
   const handlePan = () => {
@@ -16,11 +13,6 @@ export default function PanToCurrentLocation({ setLocationMarker }: PanToCurrent
 
           // Pan to location with animation (or use map.panTo)
           map.flyTo(latLng, map.getZoom(), { animate: true });
-
-          // Optional: Add/Update a marker at the current location
-          if (setLocationMarker) {
-            setLocationMarker(latLng);
-          }
         },
         (error) => {
           console.error('Error fetching current location:', error);

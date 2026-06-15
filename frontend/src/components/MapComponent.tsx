@@ -1,10 +1,35 @@
-import { MapContainer, TileLayer , Marker,Popup, useMap, GeoJSON, LayersControl} from 'react-leaflet'
+import { 
+    MapContainer, TileLayer , Marker,
+    Popup, useMap, GeoJSON, 
+    LayersControl
+} from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import L from 'leaflet';
+
 import {useState, useEffect} from 'react'
 import type { Dispatch, SetStateAction } from 'react';
 import {useLoaderData} from 'react-router'
 import PanToCurrentLocation from "./PanToCurrentLocation"
-import L from 'leaflet';
+import DraggableMarker from "./DraggableMarker"
 
+const complaintIcon = L.icon({
+    iconUrl: '/icons/marker-icon-red.png',
+    shadowUrl: '/icons/marker-shadow.png',
+
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+});
+const currentLocationIcon = L.icon({
+    iconUrl: '/icons/marker-icon-blue.png',
+    shadowUrl: '/icons/marker-shadow.png',
+
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+});
 interface Complaint{
     id:string;
     latitude:number;
@@ -59,7 +84,6 @@ function MapEvents({ setComplaints }: MapEventsProps) {
 export default function MapComponent(){
     const [location, setLocation] = useState({lat:0, lng:0})
     const [complaints, setComplaints] = useState<Complaint[]>([]);
-    const [markerPosition, setMarkerPosition] = useState<L.LatLng | null>(null);
 
     const geoJson = useLoaderData()
 
@@ -78,7 +102,7 @@ export default function MapComponent(){
         <>
             {location.lat && location.lng &&           
                     <MapContainer center={[location.lat, location.lng]} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
-                        <LayersControl position="topright">
+                        <LayersControl position="bottomright">
                             <LayersControl.BaseLayer checked name="OpenStreetMap">
                                 <TileLayer
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -87,7 +111,7 @@ export default function MapComponent(){
                             </LayersControl.BaseLayer>
 
                             {geoJson && (
-                                <LayersControl.Overlay checked name="Ward Boundaries">
+                                <LayersControl.Overlay name="Ward Boundaries">
                                     <GeoJSON
                                         data={geoJson}
                                         style={{ color: "#2563eb", weight: 1.5, fillOpacity: 0.1 , fillRule: 'nonzero' }}
@@ -103,18 +127,22 @@ export default function MapComponent(){
                         </LayersControl>
 
                         <MapEvents setComplaints={setComplaints}/>
-                        <PanToCurrentLocation setLocationMarker={setMarkerPosition} />
-                        <Marker position={[location.lat, location.lng]}>
-                            <Popup>
-                            You are here!
-                            </Popup>
+                        <PanToCurrentLocation />
+                        <Marker
+                            position={[location.lat, location.lng]}
+                            icon={currentLocationIcon}
+                        >
+                            <Popup>You are here!</Popup>
                         </Marker>
-                        {complaints.map((complaint:Complaint)=>
-                            <Marker position={[complaint.latitude, complaint.longitude]} key={complaint.id}>
-                                <Popup>{complaint.original_title}</Popup>
-                            </Marker>
-                        )}
-                        {markerPosition && <Marker position={markerPosition} />}
+                        <MarkerClusterGroup>
+                            {complaints.map((complaint:Complaint)=>
+                                <Marker position={[complaint.latitude, complaint.longitude]} 
+                                        key={complaint.id} icon={complaintIcon}>
+                                    <Popup>{complaint.original_title}</Popup>
+                                </Marker>
+                            )}
+                        </MarkerClusterGroup>
+                        <DraggableMarker center={location}/>
                     </MapContainer>
             }
         </>
