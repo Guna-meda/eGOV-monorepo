@@ -1,13 +1,27 @@
 CATEGORY_RULES = {
     "water_supply": {
-        "no_supply": ["no water", "tap", "taps ran dry", "paani nahi", "water shortage", "water in the tap", "kami", "tanker"],
+        "no_supply": [
+            "no water",
+            "tap",
+            "taps ran dry",
+            "paani nahi",
+            "water shortage",
+            "water in the tap",
+            "kami",
+            "tanker",
+        ],
         "low_pressure": ["low pressure", "slow water", "weak flow"],
         "tanker_delay": ["tanker delay", "arrange tankers", "tanker not"],
         "burst_pipeline": ["burst pipe", "pipeline", "leakage", "pipe broken"],
     },
     "drainage": {
         "waterlogging": ["waterlogging", "rain water", "flooded", "standing water"],
-        "blocked_drain": ["blocked drain", "drain blocked", "drain is blocked", "choked drain"],
+        "blocked_drain": [
+            "blocked drain",
+            "drain blocked",
+            "drain is blocked",
+            "choked drain",
+        ],
         "manhole_overflow": ["manhole", "overflow", "drain overflow"],
     },
     "roads": {
@@ -35,14 +49,32 @@ CATEGORY_RULES = {
         "septic_overflow": ["septic", "sewage", "sewer"],
     },
     "building_safety": {
-        "dangerous_structure": ["dangerous", "cracked wall", "old building", "collapse"],
+        "dangerous_structure": [
+            "dangerous",
+            "cracked wall",
+            "old building",
+            "collapse",
+        ],
         "illegal_construction": ["illegal construction"],
     },
-    "parks": {"broken_play_equipment": ["play equipment", "park broken"], "lawn_irrigation": ["lawn", "irrigation"]},
-    "traffic": {"signal_fault": ["signal fault", "traffic signal"], "illegal_parking": ["illegal parking", "parking"]},
+    "parks": {
+        "broken_play_equipment": ["play equipment", "park broken"],
+        "lawn_irrigation": ["lawn", "irrigation"],
+    },
+    "traffic": {
+        "signal_fault": ["signal fault", "traffic signal"],
+        "illegal_parking": ["illegal parking", "parking"],
+    },
     "markets": {"encroachment": ["encroachment"], "license_check": ["license"]},
-    "utilities_other": {"electrical_cabinet_open": ["cabinet open"], "cable_hazard": ["cable", "wire"]},
-    "grievance_general": {"service_delay": ["delay"], "staff_behavior": ["staff"], "information_request": ["information"]},
+    "utilities_other": {
+        "electrical_cabinet_open": ["cabinet open"],
+        "cable_hazard": ["cable", "wire"],
+    },
+    "grievance_general": {
+        "service_delay": ["delay"],
+        "staff_behavior": ["staff"],
+        "information_request": ["information"],
+    },
 }
 
 

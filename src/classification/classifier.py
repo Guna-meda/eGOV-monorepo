@@ -11,7 +11,9 @@ from src.utils.config import MODELS_DIR, RANDOM_SEED
 def add_rule_labels(df: pd.DataFrame) -> pd.DataFrame:
     labelled = df.copy()
     predictions = labelled["processed_text"].fillna("").map(classify_by_rules)
-    labelled[["category", "subcategory", "category_confidence"]] = pd.DataFrame(predictions.tolist(), index=labelled.index)
+    labelled[["category", "subcategory", "category_confidence"]] = pd.DataFrame(
+        predictions.tolist(), index=labelled.index
+    )
     return labelled
 
 
@@ -22,7 +24,12 @@ def train_category_model(df: pd.DataFrame) -> Pipeline | None:
     model = Pipeline(
         [
             ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=1, max_features=8000)),
-            ("clf", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=RANDOM_SEED)),
+            (
+                "clf",
+                LogisticRegression(
+                    max_iter=1000, class_weight="balanced", random_state=RANDOM_SEED
+                ),
+            ),
         ]
     )
     model.fit(train_df["processed_text"], train_df["category"])
