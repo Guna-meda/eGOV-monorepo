@@ -1,5 +1,0 @@
-transformers>=4.41.0
-sentencepiece>=0.2.0
-torch>=2.3.0
-sacremoses>=0.1.1
-aksharamukha>=2.3
