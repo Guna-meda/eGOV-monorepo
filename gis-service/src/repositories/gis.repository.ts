@@ -32,18 +32,25 @@ export const createBoundaryLayer = async(file:Express.Multer.File, data: Boundar
     }
 }
 export const getBoundaryLayer = async(data: {city:string, layer: string})=>{
-    const rows = await db.execute(sql`
-        SELECT properties, ST_AsGeoJSON(geom) as geometry
-        FROM boundary_layers
-        WHERE city = ${data.city} AND layer_type = ${data.layer}
-    `);
+    try{
+        const rows = await db.execute(sql`
+            SELECT properties, ST_AsGeoJSON(geom) as geometry
+            FROM boundary_layers
+            WHERE city = ${data.city} AND layer_type = ${data.layer}
+        `);
 
-    return {
-        type: "FeatureCollection",
-        features: rows.rows.map(row => ({
-            type: "Feature",
-            geometry: JSON.parse(row.geometry as string),
-            properties: row.properties
-        }))
-    };
+        return {
+            type: "FeatureCollection",
+            features: rows.rows.map(row => ({
+                type: "Feature",
+                geometry: JSON.parse(row.geometry as string),
+                properties: row.properties
+            }))
+        };
+    }
+    catch(err){
+        console.dir(err, { depth: null });
+        throw err;
+    }
+
 }
