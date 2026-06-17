@@ -1,9 +1,10 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
-import { Marker, Popup } from 'react-leaflet';
-import type { Marker as LeafletMarker, LatLngExpression } from 'leaflet';
+import { Marker, Popup , useMap} from 'react-leaflet';
+import type { Marker as LeafletMarker } from 'leaflet';
 import L from 'leaflet';
+import type { Icon } from 'leaflet';
 
-const draggablePinIcon = L.icon({
+const draggableDefaultPinIcon = L.icon({
     iconUrl: '/icons/marker-icon-green.png',
     shadowUrl: '/icons/marker-shadow.png',
 
@@ -13,30 +14,35 @@ const draggablePinIcon = L.icon({
     shadowSize: [41, 41],
 });
 interface DraggableMarkerProps {
-  center: LatLngExpression;
+    icon?: Icon;
+    onDrop?: (position: L.LatLng)=> void
 }
 
 export default function DraggableMarker({
-  center,
+  icon=draggableDefaultPinIcon,
+  onDrop
+
 }: DraggableMarkerProps) {
-  const [draggable, setDraggable] = useState(false);
-  const [position, setPosition] = useState<LatLngExpression>(center);
+    const [draggable, setDraggable] = useState(false);
+    const map = useMap();
+    const center = map.getCenter();
+    const [position, setPosition] = useState<L.LatLng>(center);
 
-  const markerRef = useRef<LeafletMarker | null>(null);
+    const markerRef = useRef<LeafletMarker | null>(null);
 
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker) {
-            const pos = marker.getLatLng();
-            setPosition(prev=>pos);
-            console.log('Dropped pin at:', pos);
-        }
-      },
-    }),
-    []
-  );
+    const eventHandlers = useMemo(
+      () => ({
+        dragend() {
+          const marker = markerRef.current;
+          if (marker) {
+              const pos = marker.getLatLng();
+              setPosition(()=>pos);
+              if(onDrop) onDrop(pos)            
+          }
+        },
+      }),
+      [onDrop]
+    );
 
   const toggleDraggable = useCallback(() => {
     setDraggable((d) => !d);
@@ -48,7 +54,7 @@ export default function DraggableMarker({
       eventHandlers={eventHandlers}
       position={position}
       ref={markerRef}
-      icon={draggablePinIcon}
+      icon={icon}
     >
       <Popup minWidth={90}>
         <span onClick={toggleDraggable}>
