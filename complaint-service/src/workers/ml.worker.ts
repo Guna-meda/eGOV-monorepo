@@ -1,4 +1,4 @@
-import './env.js';
+import '../env.js';
 import { Worker } from 'bullmq';
 
 import {
