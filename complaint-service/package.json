@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@egov/shared": "workspace:*",
+    "@egov/shared": "file:../packages/shared",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "bullmq": "^5.78.0",
