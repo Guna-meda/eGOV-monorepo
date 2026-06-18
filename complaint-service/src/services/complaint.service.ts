@@ -1,39 +1,22 @@
-import * as complaintRepository from '../repositories/complaint.repository.ts';
-import { ApiError } from '../utils/ApiError.ts';
-import { CreateComplaintDto } from '../types/complaint.types.ts';
-import logger from '../utils/logger.ts';
-import { complaintQueue } from '../queues/complaint.queue.ts';
+import * as complaintRepository from '../repositories/complaint.repository.js';
+import { ApiError, logger } from '@egov/shared';
+import type { CreateComplaintDto } from '@egov/shared';
+import { complaintQueue } from '../queues/complaint.queue.js';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
-  // Check for originalTitle instead of title
   if (!data.originalTitle?.trim()) {
-    throw new ApiError(
-      400,
-      'Title is required'
-    );
+    throw new ApiError(400, 'Title is required');
   }
 
   if (!data.description?.trim()) {
-    throw new ApiError(
-      400,
-      'Description is required'
-    );
+    throw new ApiError(400, 'Description is required');
   }
 
-  const complaint = await (
-    complaintRepository as any
-  ).createComplaint(data);
+  const complaint = await complaintRepository.createComplaint(data);
 
-  await complaintQueue.add(
-  'classify-complaint',
-  {
-    complaintId: complaint.id,
-  }
-);
+  await complaintQueue.add('classify-complaint', { complaintId: complaint.id });
 
-  logger.info(
-    `Complaint created: ${complaint.id}`
-  );
+  logger.info(`Complaint created: ${complaint.id}`);
 
   return complaint;
 };

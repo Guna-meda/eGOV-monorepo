@@ -1,7 +1,6 @@
-import { eq } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { complaints, complaintMedia } from "../db/schema/complaint.schema.js";
-import { CreateComplaintDto } from "../types/complaint.types.js";
+import { eq } from 'drizzle-orm';
+import { db, complaints, complaintMedia } from '@egov/shared';
+import type { CreateComplaintDto, MlAnalysisDto } from '@egov/shared';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   try {
@@ -27,16 +26,10 @@ export const createComplaint = async (data: CreateComplaintDto) => {
           providerFileId: item.providerFileId,
         }));
 
-        savedMedia = await tx
-          .insert(complaintMedia)
-          .values(mediaValues)
-          .returning();
+        savedMedia = await tx.insert(complaintMedia).values(mediaValues).returning();
       }
 
-      return {
-        ...newComplaint,
-        media: savedMedia,
-      };
+      return { ...newComplaint, media: savedMedia };
     });
   } catch (error) {
     console.dir(error, { depth: null });
@@ -49,27 +42,11 @@ export const getAllComplaints = async () => {
 };
 
 export const getComplaintById = async (id: string) => {
-  const [complaint] = await db
-    .select()
-    .from(complaints)
-    .where(eq(complaints.id, id));
-
+  const [complaint] = await db.select().from(complaints).where(eq(complaints.id, id));
   return complaint;
 };
 
-export const updateMlAnalysis = async (
-  complaintId: string,
-  data: {
-    category: string;
-    subcategory: string;
-    sentiment: string;
-    severityScore: number;
-    severityLabel: string;
-    riskScore: number;
-    riskLabel: string;
-    mlStatus: string;
-  }
-) => {
+export const updateMlAnalysis = async (complaintId: string, data: MlAnalysisDto) => {
   const [updatedComplaint] = await db
     .update(complaints)
     .set({
@@ -89,16 +66,10 @@ export const updateMlAnalysis = async (
   return updatedComplaint;
 };
 
-export const updateMlStatus = async (
-  complaintId: string,
-  status: string
-) => {
+export const updateMlStatus = async (complaintId: string, status: string) => {
   const [updatedComplaint] = await db
     .update(complaints)
-    .set({
-      mlStatus: status,
-      updatedAt: new Date(),
-    })
+    .set({ mlStatus: status, updatedAt: new Date() })
     .where(eq(complaints.id, complaintId))
     .returning();
 

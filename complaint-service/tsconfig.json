@@ -13,7 +13,12 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
 
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    "paths": {
+      "@egov/shared": ["../packages/shared/src/index.ts"],
+      "@egov/shared/*": ["../packages/shared/src/*"]
+    }
   },
 
   "include": ["src"]
