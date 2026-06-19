@@ -10,15 +10,15 @@
     "strict": true,
 
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
+    // "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
 
     "skipLibCheck": true,
 
-    "paths": {
-      "@egov/shared": ["../packages/shared/src/index.ts"],
-      "@egov/shared/*": ["../packages/shared/src/*"]
-    }
+    // "paths": {
+    //   "@egov/shared": ["../packages/shared/src/index.ts"],
+    //   "@egov/shared/*": ["../packages/shared/src/*"]
+    // }
   },
 
   "include": ["src"]
