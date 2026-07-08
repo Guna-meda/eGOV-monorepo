@@ -1,34 +1,16 @@
-'''from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from src.api.schemas import (
-    ComplaintAnalysisRequest,
-    ComplaintAnalysisResponse
-)
-
-router = APIRouter()
-
-from predict_complaint import predict_complaint
-
-
-@router.post("/ai/analyze",response_model=ComplaintAnalysisResponse)
-def analyze_complaint(request: ComplaintAnalysisRequest):
-
-    prediction = predict_complaint(request.complaint_text, translate=False)
-
-    return {
-        "complaint_id": request.complaint_id,
-        
-    }'''
-
-
-from fastapi import APIRouter
-from predictor import predict
-from schemas import *
+from src.api.schemas import AnalyzeRequest, AnalyzeResponse
+from src.classification.predictor import predict
 
 router = APIRouter()
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze(request: AnalyzeRequest):
-
-    return predict(request.text, request.selected_service_code)
+    try:
+        return predict(request.text, request.selected_service_code)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

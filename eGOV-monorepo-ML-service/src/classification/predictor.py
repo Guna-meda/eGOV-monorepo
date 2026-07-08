@@ -1,41 +1,328 @@
+from functools import lru_cache
+from pathlib import Path
+import re
+
 import joblib
 import numpy as np
 
-from mdms import service_lookup
-
-model = joblib.load("models/servicecode_classifier.pkl")
-
-menu_lookup = joblib.load("models/servicecode_to_menupath.pkl")
+from src.classification.mdms import service_lookup
 
 
-def predict(text, selected_service_code=None):
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-    probs = model.predict_proba([text])[0]
-    classes = model.named_steps["classifier"].classes_
-    idx = np.argsort(probs)[::-1][:3]
+MODEL_CANDIDATES = [
+    PROJECT_ROOT / "models" / "classification" / "tfidf_lsvm_servicecode.pkl",
+    PROJECT_ROOT / "models" / "tfidf_lsvm_servicecode.pkl",
+    PROJECT_ROOT / "src" / "classification" / "tfidf_lsvm_servicecode.pkl",
+    PROJECT_ROOT / "models" / "servicecode_classifier.pkl",
+]
 
+MENU_LOOKUP_CANDIDATES = [
+    PROJECT_ROOT / "models" / "classification" / "servicecode_to_menupath.pkl",
+    PROJECT_ROOT / "models" / "servicecode_to_menupath.pkl",
+    PROJECT_ROOT / "src" / "classification" / "servicecode_to_menupath.pkl",
+]
+
+
+VULNERABLE_TERMS = {
+    "hospital",
+    "government hospital",
+    "clinic",
+    "school",
+    "college",
+    "hostel",
+    "children",
+    "child",
+    "elderly",
+    "senior citizen",
+    "pregnant",
+    "disabled",
+    "patient",
+    "ambulance",
+    "orphanage",
+    "kindergarten",
+}
+
+CRITICALITY_LEVELS = (
+    (
+        4,
+        {
+            "electric shock",
+            "live wire",
+            "gas leak",
+            "fire",
+            "building collapse",
+            "road collapse",
+            "bridge collapse",
+            "open manhole",
+            "transformer burst",
+            "high voltage",
+            "electrocution",
+            "short circuit",
+        },
+    ),
+    (
+        3,
+        {
+            "no water",
+            "water supply",
+            "drinking water",
+            "no electricity",
+            "power outage",
+            "power failure",
+            "sewer overflow",
+            "sewage overflow",
+            "flood",
+            "flooding",
+            "drain blockage",
+            "water logging",
+        },
+    ),
+    (
+        2,
+        {
+            "pothole",
+            "road damage",
+            "road repair",
+            "tree fallen",
+            "street light",
+            "footpath",
+            "garbage",
+            "debris",
+            "drain",
+            "waste",
+        },
+    ),
+    (
+        1,
+        {
+            "park",
+            "playground",
+            "street dog",
+            "encroachment",
+            "painting",
+            "cleanliness",
+        },
+    ),
+)
+
+REPETITION_TERMS = ("again", "still", "repeated", "multiple", "every year", "yet", "unresolved")
+
+
+def _first_existing_path(paths: list[Path]) -> Path | None:
+    return next((path for path in paths if path.exists()), None)
+
+
+@lru_cache(maxsize=1)
+def _load_model():
+    model_path = _first_existing_path(MODEL_CANDIDATES)
+    if model_path is None:
+        searched = ", ".join(str(path) for path in MODEL_CANDIDATES)
+        raise FileNotFoundError(
+            "Service-code classifier model not found. "
+            "Save the new training artifact as models/classification/tfidf_lsvm_servicecode.pkl. "
+            f"Searched: {searched}"
+        )
+    return joblib.load(model_path)
+
+
+@lru_cache(maxsize=1)
+def _load_menu_lookup() -> dict[str, str]:
+    lookup_path = _first_existing_path(MENU_LOOKUP_CANDIDATES)
+    if lookup_path is None:
+        return {
+            code: service.get("menuPath", "")
+            for code, service in service_lookup.items()
+        }
+    return joblib.load(lookup_path)
+
+
+def _classes(model) -> np.ndarray:
+    if hasattr(model, "classes_"):
+        return np.asarray(model.classes_)
+
+    for step_name in ("classifier", "clf"):
+        step = getattr(model, "named_steps", {}).get(step_name)
+        if step is not None and hasattr(step, "classes_"):
+            return np.asarray(step.classes_)
+
+    raise ValueError("Classifier classes could not be found on the loaded model.")
+
+
+def _softmax(scores: np.ndarray) -> np.ndarray:
+    scores = np.asarray(scores, dtype=float)
+    scores = scores - np.max(scores)
+    exp_scores = np.exp(scores)
+    return exp_scores / exp_scores.sum()
+
+
+def _predict_probabilities(model, text: str) -> tuple[np.ndarray, np.ndarray]:
+    classes = _classes(model)
+
+    if hasattr(model, "predict_proba"):
+        probabilities = model.predict_proba([text])[0]
+        return classes, np.asarray(probabilities, dtype=float)
+
+    if not hasattr(model, "decision_function"):
+        raise ValueError("Loaded classifier must expose predict_proba or decision_function.")
+
+    scores = np.asarray(model.decision_function([text])[0], dtype=float)
+    if scores.ndim == 0:
+        scores = np.asarray([-scores, scores], dtype=float)
+    if len(classes) == 2 and scores.ndim == 1 and len(scores) == 1:
+        scores = np.asarray([-scores[0], scores[0]], dtype=float)
+
+    return classes, _softmax(scores)
+
+
+def _time_score(text: str) -> tuple[int, float]:
+    matches = re.findall(
+        r"(\d+)\s*(hour|hours|day|days|week|weeks|month|months|year|years)",
+        text,
+    )
+
+    total_days = 0.0
+    for value, unit in matches:
+        amount = int(value)
+        if "hour" in unit:
+            total_days += amount / 24
+        elif "day" in unit:
+            total_days += amount
+        elif "week" in unit:
+            total_days += amount * 7
+        elif "month" in unit:
+            total_days += amount * 30
+        elif "year" in unit:
+            total_days += amount * 365
+
+    if total_days == 0:
+        return 0, total_days
+    if total_days <= 7:
+        return 1, total_days
+    if total_days <= 30:
+        return 2, total_days
+    if total_days <= 90:
+        return 3, total_days
+    return 4, total_days
+
+
+def _criticality_score(text: str) -> tuple[int, list[str]]:
+    for score, terms in CRITICALITY_LEVELS:
+        matched = sorted(term for term in terms if term in text)
+        if matched:
+            return score, matched
+    return 0, []
+
+
+def _vulnerability_score(text: str) -> tuple[int, list[str]]:
+    matched = sorted(term for term in VULNERABLE_TERMS if term in text)
+    return min(len(set(matched)), 3), matched
+
+
+def _repetition_score(text: str) -> tuple[int, list[str]]:
+    score = 0
+    matched = []
+
+    for term in REPETITION_TERMS:
+        if term in text:
+            matched.append(term)
+            score += 1
+
+    complaint_counts = re.findall(r"(\d+)(st|nd|rd|th)?\s*(complaint|time|times)", text)
+    if complaint_counts:
+        count = int(complaint_counts[0][0])
+        if count == 2:
+            score += 1
+        elif count == 3:
+            score += 2
+        elif count > 3:
+            score += 3
+        matched.append(f"{count} complaints")
+
+    return min(score, 3), matched
+
+
+def _urgency(text: str) -> tuple[str, list[str]]:
+    normalized = text.lower()
+    time_score, days = _time_score(normalized)
+    critical_score, critical = _criticality_score(normalized)
+    vulnerability_score, vulnerable = _vulnerability_score(normalized)
+    repetition_score, repetition = _repetition_score(normalized)
+
+    final_score = time_score + critical_score + vulnerability_score + repetition_score
+
+    if final_score <= 4:
+        urgency = "low"
+    elif final_score <= 9:
+        urgency = "medium"
+    else:
+        urgency = "high"
+
+    signals = []
+    if time_score:
+        signals.append(f"time:{days:g}_days")
+    signals.extend(f"critical:{term}" for term in critical)
+    signals.extend(f"vulnerability:{term}" for term in vulnerable)
+    signals.extend(f"repetition:{term}" for term in repetition)
+
+    return urgency, signals
+
+
+def _service_suggestion(code: str, confidence: float, menu_lookup: dict[str, str]) -> dict:
+    mdms = service_lookup[code]
+    menu_path = menu_lookup.get(code) or mdms.get("menuPath", "")
+    return {
+        "serviceCode": code,
+        "name": mdms.get("name", code),
+        "menuPath": menu_path,
+        "category": menu_path,
+        "confidence": round(float(confidence), 4),
+    }
+
+
+def predict(text: str, selected_service_code: str | None = None) -> dict:
+    model = _load_model()
+    menu_lookup = _load_menu_lookup()
+    classes, probabilities = _predict_probabilities(model, text)
+
+    ranked_indices = np.argsort(probabilities)[::-1]
     suggestions = []
 
-    for i in idx:
+    for index in ranked_indices:
+        code = str(classes[index])
+        if code not in service_lookup:
+            continue
+        suggestions.append(_service_suggestion(code, probabilities[index], menu_lookup))
+        if len(suggestions) == 3:
+            break
 
-        code = classes[i]
-        mdms = service_lookup[code]
-        suggestions.append(
-            {
-                "serviceCode": code,
-                "name": mdms["name"],
-                "category": mdms["menuPath"],
-                "confidence": float(probs[i]),
-            }
-        )
+    if not suggestions:
+        raise ValueError("Model predictions did not match any serviceCode in Rainmaker MDMS data.")
 
     best = suggestions[0]
+    top_confidence = best["confidence"]
+    second_confidence = suggestions[1]["confidence"] if len(suggestions) > 1 else 0.0
+    low_confidence = top_confidence < 0.5 or (top_confidence - second_confidence) < 0.1
+
+    selected_menu_path = None
+    if selected_service_code:
+        selected_service = service_lookup.get(selected_service_code)
+        selected_menu_path = selected_service.get("menuPath") if selected_service else None
+
+    urgency, urgency_signals = _urgency(text)
 
     return {
-        "predicted_category": best["category"],
+        "urgency": urgency,
+        "urgency_signals": urgency_signals,
         "predicted_service_code": best["serviceCode"],
+        "predicted_menu_path": best["menuPath"],
+        "predicted_category": best["menuPath"],
         "suggested_service_codes": suggestions,
-        "low_confidence": best["confidence"] < 0.6,
-        "possible_mismatch": selected_service_code is not None
-        and selected_service_code != best["serviceCode"],
+        "confidence": [suggestion["confidence"] for suggestion in suggestions],
+        "low_confidence": low_confidence,
+        "possible_mismatch": bool(
+            selected_service_code
+            and selected_menu_path is not None
+            and selected_menu_path != best["menuPath"]
+        ),
     }

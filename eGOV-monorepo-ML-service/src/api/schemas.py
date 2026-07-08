@@ -1,26 +1,6 @@
-'''from pydantic import BaseModel
-
-
-class ComplaintAnalysisRequest(BaseModel):
-
-    complaint_id: str
-    complaint_text: str
-
-
-class ComplaintAnalysisResponse(BaseModel):
-
-    complaint_id: str
-    category: str
-    subcategory: str
-    sentiment: str
-    severity_score: float
-    severity_label: str
-    #risk_score: float
-    #risk_label: str'''
-
-
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
+
 
 class AnalyzeRequest(BaseModel):
     text: str
@@ -30,15 +10,18 @@ class AnalyzeRequest(BaseModel):
 class SuggestedService(BaseModel):
     serviceCode: str
     name: str
+    menuPath: str
     category: str
     confidence: float
 
 
 class AnalyzeResponse(BaseModel):
+    urgency: Literal["high", "medium", "low"]
+    urgency_signals: list[str]
     predicted_category: str
     predicted_service_code: str
-
+    predicted_menu_path: str
     suggested_service_codes: list[SuggestedService]
-
+    confidence: list[float]
     low_confidence: bool
     possible_mismatch: bool
