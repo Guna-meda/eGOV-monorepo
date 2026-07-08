@@ -17,7 +17,13 @@ MODEL_CANDIDATES = [
     PROJECT_ROOT / "models" / "servicecode_classifier.pkl",
 ]
 
+SPLIT_MODEL_DIR_CANDIDATES = [
+    PROJECT_ROOT / "models" / "category_classifier",
+    PROJECT_ROOT / "models" / "classification",
+]
+
 MENU_LOOKUP_CANDIDATES = [
+    PROJECT_ROOT / "models" / "category_classifier" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "classification" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "src" / "classification" / "servicecode_to_menupath.pkl",
@@ -116,14 +122,28 @@ def _first_existing_path(paths: list[Path]) -> Path | None:
 @lru_cache(maxsize=1)
 def _load_model():
     model_path = _first_existing_path(MODEL_CANDIDATES)
-    if model_path is None:
-        searched = ", ".join(str(path) for path in MODEL_CANDIDATES)
-        raise FileNotFoundError(
-            "Service-code classifier model not found. "
-            "Save the new training artifact as models/classification/tfidf_lsvm_servicecode.pkl. "
-            f"Searched: {searched}"
-        )
-    return joblib.load(model_path)
+    if model_path is not None:
+        return joblib.load(model_path)
+
+    for model_dir in SPLIT_MODEL_DIR_CANDIDATES:
+        classifier_path = model_dir / "linear_svm_servicecode.pkl"
+        vectorizer_path = model_dir / "tfidf_vectorizer.pkl"
+        label_encoder_path = model_dir / "label_encoder.pkl"
+        if classifier_path.exists() and vectorizer_path.exists() and label_encoder_path.exists():
+            return {
+                "classifier": joblib.load(classifier_path),
+                "vectorizer": joblib.load(vectorizer_path),
+                "label_encoder": joblib.load(label_encoder_path),
+            }
+
+    searched = ", ".join(str(path) for path in MODEL_CANDIDATES)
+    searched_split = ", ".join(str(path) for path in SPLIT_MODEL_DIR_CANDIDATES)
+    raise FileNotFoundError(
+        "Service-code classifier model not found. "
+        "Expected either a single pipeline artifact or the split artifacts "
+        "linear_svm_servicecode.pkl, tfidf_vectorizer.pkl, and label_encoder.pkl. "
+        f"Searched pipeline files: {searched}. Searched split model directories: {searched_split}"
+    )
 
 
 @lru_cache(maxsize=1)
@@ -138,6 +158,14 @@ def _load_menu_lookup() -> dict[str, str]:
 
 
 def _classes(model) -> np.ndarray:
+    if isinstance(model, dict):
+        classifier = model["classifier"]
+        label_encoder = model["label_encoder"]
+        classifier_classes = getattr(classifier, "classes_", None)
+        if classifier_classes is not None and hasattr(label_encoder, "inverse_transform"):
+            return np.asarray(label_encoder.inverse_transform(classifier_classes))
+        return np.asarray(getattr(label_encoder, "classes_"))
+
     if hasattr(model, "classes_"):
         return np.asarray(model.classes_)
 
@@ -158,15 +186,30 @@ def _softmax(scores: np.ndarray) -> np.ndarray:
 
 def _predict_probabilities(model, text: str) -> tuple[np.ndarray, np.ndarray]:
     classes = _classes(model)
+    prediction_input = [text]
+
+    if isinstance(model, dict):
+        classifier = model["classifier"]
+        prediction_input = model["vectorizer"].transform(prediction_input)
+
+        if hasattr(classifier, "predict_proba"):
+            probabilities = classifier.predict_proba(prediction_input)[0]
+            return classes, np.asarray(probabilities, dtype=float)
+
+        if not hasattr(classifier, "decision_function"):
+            raise ValueError("Loaded split classifier must expose predict_proba or decision_function.")
+
+        scores = np.asarray(classifier.decision_function(prediction_input)[0], dtype=float)
+        return classes, _softmax(scores)
 
     if hasattr(model, "predict_proba"):
-        probabilities = model.predict_proba([text])[0]
+        probabilities = model.predict_proba(prediction_input)[0]
         return classes, np.asarray(probabilities, dtype=float)
 
     if not hasattr(model, "decision_function"):
         raise ValueError("Loaded classifier must expose predict_proba or decision_function.")
 
-    scores = np.asarray(model.decision_function([text])[0], dtype=float)
+    scores = np.asarray(model.decision_function(prediction_input)[0], dtype=float)
     if scores.ndim == 0:
         scores = np.asarray([-scores, scores], dtype=float)
     if len(classes) == 2 and scores.ndim == 1 and len(scores) == 1:
@@ -280,6 +323,27 @@ def _service_suggestion(code: str, confidence: float, menu_lookup: dict[str, str
     }
 
 
+def _selected_menu_path(selected_service_code: str | None) -> str | None:
+    if not selected_service_code:
+        return None
+
+    selected = selected_service_code.strip()
+    if selected in service_lookup:
+        return service_lookup[selected].get("menuPath")
+
+    normalized = selected.lower()
+    for code, service in service_lookup.items():
+        if code.lower() == normalized:
+            return service.get("menuPath")
+
+    menu_paths = {
+        str(service.get("menuPath", "")).lower(): service.get("menuPath")
+        for service in service_lookup.values()
+        if service.get("menuPath")
+    }
+    return menu_paths.get(normalized)
+
+
 def predict(text: str, selected_service_code: str | None = None) -> dict:
     model = _load_model()
     menu_lookup = _load_menu_lookup()
@@ -304,10 +368,7 @@ def predict(text: str, selected_service_code: str | None = None) -> dict:
     second_confidence = suggestions[1]["confidence"] if len(suggestions) > 1 else 0.0
     low_confidence = top_confidence < 0.5 or (top_confidence - second_confidence) < 0.1
 
-    selected_menu_path = None
-    if selected_service_code:
-        selected_service = service_lookup.get(selected_service_code)
-        selected_menu_path = selected_service.get("menuPath") if selected_service else None
+    selected_menu_path = _selected_menu_path(selected_service_code)
 
     urgency, urgency_signals = _urgency(text)
 
