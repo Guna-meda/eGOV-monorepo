@@ -9,7 +9,7 @@ router = APIRouter()
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze(request: AnalyzeRequest):
     try:
-        return predict(request.text, request.selected_service_code)
+        return predict(request.text, selected_menu_path=request.selected_menu_path)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

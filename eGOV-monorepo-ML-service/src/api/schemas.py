@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 class AnalyzeRequest(BaseModel):
     text: str
-    selected_service_code: Optional[str] = None
+    selected_menu_path: Optional[str] = None
 
 
 class SuggestedService(BaseModel):
