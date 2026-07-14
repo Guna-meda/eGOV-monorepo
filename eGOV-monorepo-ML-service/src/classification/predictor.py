@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from pyexpat import model
 import re
 
 import joblib
@@ -19,12 +20,14 @@ MODEL_CANDIDATES = [
 ]
 
 SPLIT_MODEL_DIR_CANDIDATES = [
-    PROJECT_ROOT / "models" / "category_classifier",
+    # PROJECT_ROOT / "models" / "category_classifier",
+    PROJECT_ROOT / "models" / "category_classifier_rf",
     PROJECT_ROOT / "models" / "classification",
 ]
 
 MENU_LOOKUP_CANDIDATES = [
-    PROJECT_ROOT / "models" / "category_classifier" / "servicecode_to_menupath.pkl",
+    # PROJECT_ROOT / "models" / "category_classifier" / "servicecode_to_menupath.pkl",
+    PROJECT_ROOT / "models" / "category_classifier_rf" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "classification" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "src" / "classification" / "servicecode_to_menupath.pkl",
@@ -127,7 +130,8 @@ def _load_model():
         return joblib.load(model_path)
 
     for model_dir in SPLIT_MODEL_DIR_CANDIDATES:
-        classifier_path = model_dir / "linear_svm_servicecode.pkl"
+        # classifier_path = model_dir / "linear_svm_servicecode.pkl"
+        classifier_path = (model_dir/ "random_forest_servicecode.pkl")
         vectorizer_path = model_dir / "tfidf_vectorizer.pkl"
         label_encoder_path = model_dir / "label_encoder.pkl"
         if classifier_path.exists() and vectorizer_path.exists() and label_encoder_path.exists():
@@ -347,6 +351,10 @@ def _selected_menu_path(selected_service_code: str | None) -> str | None:
 
 def predict(text: str, selected_menu_path: str | None = None) -> dict:
     model = _load_model()
+
+    print(model["classifier"].n_features_in_)
+    print(len(model["vectorizer"].vocabulary_))
+
     menu_lookup = _load_menu_lookup()
     classes, probabilities = _predict_probabilities(model, text)
 
