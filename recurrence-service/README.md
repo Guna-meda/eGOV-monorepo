@@ -1,3 +1,7 @@
 # recurrence-service
 
-This folder was created as the initial project structure for a standalone FastAPI recurrence detection microservice.
+This service provides a standalone FastAPI-based ingestion and recurrence analysis workflow for complaint data.
+
+## Data ingestion
+
+The ingestion layer loads CSV datasets from the raw data directory using a reusable DataLoader abstraction.
