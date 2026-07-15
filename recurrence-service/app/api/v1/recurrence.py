@@ -1,63 +1,43 @@
 """API routes for recurrence detection."""
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 
 from app.dependencies.container import get_recurrence_service
-from app.models.complaint import ComplaintInput, ComplaintResponse
-from app.models.recurrence import RecurrenceDetectionResponse
+from app.models.recurrence import WardServiceRecurrence
 from app.services.recurrence_service import RecurrenceService
 
 router = APIRouter(tags=["recurrence"])
 
 
-@router.post(
-    "/recurrence/analyze",
-    response_model=ComplaintResponse,
-    summary="Analyze recurring complaints",
-    description="Analyze complaint data to detect whether complaints are recurring.",
-    status_code=status.HTTP_200_OK,
+@router.get(
+    "/recurrence",
+    response_model=list[WardServiceRecurrence],
+    summary="Full ward recurrence table",
+    description="Calculate recurrence from historical complaint CSV data in the local data folder.",
 )
-def analyze_recurrence(payload: ComplaintInput) -> ComplaintResponse:
-    """Analyze complaint input and return a recurrence assessment."""
+def get_recurrence_table() -> list[WardServiceRecurrence]:
+    """Return recurrence data for every ward and service code."""
     service: RecurrenceService = get_recurrence_service()
     try:
-        return service.analyze(payload)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return service.get_recurrence_table()
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from exc
 
 
 @router.get(
-    "/recurrence/detect",
-    response_model=RecurrenceDetectionResponse,
-    summary="Detect recurring complaint months",
-    description="Aggregate complaint history by ward, service code, month, and year to identify recurring hotspots.",
+    "/recurrence/{ward_id}",
+    response_model=list[WardServiceRecurrence],
+    summary="Single ward recurrence detail",
+    description="Return the ward's service-code recurrence rows with monthly complaint counts.",
 )
-def detect_recurrence(
-    service_code_field: str = Query(
-        default="category",
-        description="Complaint field to use as serviceCode: category, sub_category, or service_code.",
-    ),
-    hotspot_threshold_years: int = Query(
-        default=2,
-        ge=1,
-        description="Minimum distinct years with complaints in the same calendar month to flag a hotspot.",
-    ),
-    hotspots_only: bool = Query(
-        default=True,
-        description="Return only ward/service pairs that have at least one recurring month.",
-    ),
-) -> RecurrenceDetectionResponse:
-    """Detect recurrent complaint months from available complaint history."""
+def get_ward_recurrence(ward_id: str) -> list[WardServiceRecurrence]:
+    """Return recurrence data for one ward."""
     service: RecurrenceService = get_recurrence_service()
     try:
-        return service.detect_recurring_months(
-            service_code_field=service_code_field,
-            hotspot_threshold_years=hotspot_threshold_years,
-            hotspots_only=hotspots_only,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        results = service.get_ward_recurrence(ward_id)
     except Exception as exc:  # pragma: no cover - defensive fallback
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from exc
+
+    if not results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ward not found")
+    return results

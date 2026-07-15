@@ -4,17 +4,12 @@ from __future__ import annotations
 
 import math
 import re
+from calendar import month_name
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Protocol
 
-from app.models.complaint import ComplaintInput, ComplaintResponse
-from app.models.recurrence import (
-    MonthlyComplaintCount,
-    RecurrenceDetectionResponse,
-    RecurringMonth,
-    WardServiceRecurrence,
-)
+from app.models.recurrence import RecurringMonth, WardServiceRecurrence
 
 
 class ComplaintHistoryRepository(Protocol):
@@ -25,66 +20,30 @@ class ComplaintHistoryRepository(Protocol):
 
 
 class RecurrenceService:
-    """Coordinate recurrence analysis for complaint inputs."""
+    """Detect recurring complaints exclusively from historical CSV records."""
+
+    HOTSPOT_THRESHOLD_YEARS = 2
 
     def __init__(self, repository: ComplaintHistoryRepository | None = None) -> None:
         """Initialize the service with an optional complaint repository."""
         self.repository = repository
 
-    def analyze(self, payload: ComplaintInput) -> ComplaintResponse:
-        """Evaluate whether a complaint appears recurrent based on simple heuristics."""
-        if not payload.category.strip():
-            raise ValueError("Category must not be empty")
+    def get_recurrence_table(self) -> list[WardServiceRecurrence]:
+        """Return the complete ward and service-code recurrence table."""
+        return self._build_recurrence_table()
 
-        if not payload.description.strip():
-            raise ValueError("Description must not be empty")
+    def get_ward_recurrence(self, ward_id: str) -> list[WardServiceRecurrence]:
+        """Return all recurrence rows and monthly counts for one ward."""
+        normalized_ward_id = self._slugify(ward_id)
+        return [row for row in self._build_recurrence_table() if row.ward_id == normalized_ward_id]
 
-        normalized_category = payload.category.strip().lower()
-        normalized_description = payload.description.strip().lower()
-
-        is_recurring = (
-            "repeat" in normalized_description
-            or "again" in normalized_description
-            or "same" in normalized_description
-            or normalized_category in {"water leakage", "streetlight", "garbage"}
-        )
-
-        recurrence_score = 0.85 if is_recurring else 0.2
-        message = (
-            "Complaint appears to be recurring based on the provided details."
-            if is_recurring
-            else "Complaint does not show strong recurrence signals."
-        )
-
-        return ComplaintResponse(
-            complaint_id=payload.complaint_id,
-            category=payload.category,
-            ward=payload.ward,
-            is_recurring=is_recurring,
-            recurrence_score=recurrence_score,
-            message=message,
-            metadata={"source": "rule-based", "repository_enabled": self.repository is not None},
-        )
-
-    def get_history(self) -> list[dict[str, Any]]:
-        """Return complaint history from the repository if available."""
-        if self.repository is None:
-            return []
-        return self.repository.get_all()
-
-    def detect_recurring_months(
-        self,
-        service_code_field: str = "category",
-        hotspot_threshold_years: int = 2,
-        hotspots_only: bool = True,
-    ) -> RecurrenceDetectionResponse:
-        """Detect recurring complaint months for each ward and service pair."""
+    def _build_recurrence_table(self) -> list[WardServiceRecurrence]:
+        """Apply the required historical month-by-year recurrence formula."""
         if self.repository is None:
             records: list[dict[str, Any]] = []
         else:
             records = self.repository.get_all()
 
-        normalized_field = self._normalize_service_code_field(service_code_field)
         monthly_counts: Counter[tuple[str, str, int, int]] = Counter()
         ward_names_by_id: dict[str, str] = {}
         years_in_dataset: set[int] = set()
@@ -92,9 +51,7 @@ class RecurrenceService:
 
         for record in records:
             ward_name = self._clean_text(self._get_first(record, "ward_name", "Ward Name", "ward"))
-            service_code = self._clean_text(
-                self._get_first(record, normalized_field, self._source_column_for_field(normalized_field))
-            )
+            service_code = self._clean_text(self._get_first(record, "serviceCode", "Category", "category"))
             grievance_date = self._parse_date(self._get_first(record, "grievance_date", "Grievance Date", "created_at"))
 
             if not ward_name or not service_code or grievance_date is None:
@@ -115,51 +72,34 @@ class RecurrenceService:
         results: list[WardServiceRecurrence] = []
 
         if total_years == 0:
-            return RecurrenceDetectionResponse(
-                total_records=len(records),
-                total_years_in_dataset=0,
-                years_in_dataset=[],
-                service_code_field=normalized_field,
-                hotspot_threshold_years=hotspot_threshold_years,
-                results=[],
-            )
+            return []
 
         for ward_id, service_code in sorted(years_by_pair):
             recurring_months: list[RecurringMonth] = []
-            full_monthly_counts: list[MonthlyComplaintCount] = []
-            max_recurrence_score = 0.0
+            month_recurrence_scores: list[float] = []
+            compact_monthly_counts = {
+                str(year): [monthly_counts[(ward_id, service_code, year, month)] for month in range(1, 13)]
+                for year in sorted_years
+            }
 
             for month in range(1, 13):
-                years_with_complaints = sum(
-                    1 for year in sorted_years if monthly_counts[(ward_id, service_code, year, month)] > 0
-                )
-                recurrence_score = years_with_complaints / total_years
-                max_recurrence_score = max(max_recurrence_score, recurrence_score)
-                is_hotspot_month = years_with_complaints >= hotspot_threshold_years
-
-                if is_hotspot_month:
+                complaint_years = [
+                    year for year in sorted_years if monthly_counts[(ward_id, service_code, year, month)] > 0
+                ]
+                if complaint_years:
+                    recurrence_score = len(complaint_years) / total_years
+                    month_recurrence_scores.append(recurrence_score)
                     recurring_months.append(
                         RecurringMonth(
                             month=month,
-                            years_with_complaints=years_with_complaints,
+                            month_name=month_name[month],
+                            years=complaint_years,
                             recurrence_score=round(recurrence_score, 4),
-                            is_hotspot=True,
+                            is_hotspot=len(complaint_years) >= self.HOTSPOT_THRESHOLD_YEARS,
                         )
                     )
 
-                for year in sorted_years:
-                    full_monthly_counts.append(
-                        MonthlyComplaintCount(
-                            year=year,
-                            month=month,
-                            complaint_count=monthly_counts[(ward_id, service_code, year, month)],
-                        )
-                    )
-
-            is_hotspot = bool(recurring_months)
-            if hotspots_only and not is_hotspot:
-                continue
-
+            is_hotspot = any(month.is_hotspot for month in recurring_months)
             results.append(
                 WardServiceRecurrence(
                     ward_id=ward_id,
@@ -167,36 +107,14 @@ class RecurrenceService:
                     serviceCode=service_code,
                     recurring_months=recurring_months,
                     years_observed=sorted(years_by_pair[(ward_id, service_code)]),
-                    recurrence_score=round(max_recurrence_score, 4),
+                    recurrence_score=round(sum(month_recurrence_scores) / len(month_recurrence_scores), 4),
                     is_hotspot=is_hotspot,
-                    monthly_counts=full_monthly_counts,
+                    monthly_counts=compact_monthly_counts,
                 )
             )
 
-        results.sort(key=lambda result: (not result.is_hotspot, -result.recurrence_score, result.ward_name, result.serviceCode))
-        return RecurrenceDetectionResponse(
-            total_records=len(records),
-            total_years_in_dataset=total_years,
-            years_in_dataset=sorted_years,
-            service_code_field=normalized_field,
-            hotspot_threshold_years=hotspot_threshold_years,
-            results=results,
-        )
-
-    def _normalize_service_code_field(self, service_code_field: str) -> str:
-        normalized = service_code_field.strip().lower().replace("-", "_")
-        if normalized in {"category", "sub_category"}:
-            return normalized
-        if normalized in {"servicecode", "service_code", "service code"}:
-            return "service_code"
-        raise ValueError("service_code_field must be one of: category, sub_category, service_code")
-
-    def _source_column_for_field(self, service_code_field: str) -> str:
-        if service_code_field == "category":
-            return "Category"
-        if service_code_field == "sub_category":
-            return "Sub Category"
-        return "serviceCode"
+        results.sort(key=lambda result: (result.ward_name, result.serviceCode))
+        return results
 
     def _get_first(self, record: dict[str, Any], *keys: str) -> Any:
         for key in keys:

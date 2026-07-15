@@ -1,7 +1,7 @@
 """CSV-based data loading utilities for the recurrence service.
 
-This module provides a reusable data access abstraction that can later be
-replaced with analytics API integrations without changing business logic.
+This module loads the local historical complaint CSV data used by recurrence
+detection.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class DataLoader:
 
     The loader discovers CSV files automatically, stores them in-memory using the
     filename stem as the key, validates required columns, and exposes simple
-    accessors suitable for later abstraction behind an API-backed repository.
+    accessors for the recurrence detector.
     """
 
     def __init__(

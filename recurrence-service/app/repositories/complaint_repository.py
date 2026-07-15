@@ -16,12 +16,8 @@ class ComplaintRepository(BaseRepository[dict[str, Any]]):
         self.ingestion_service = ingestion_service or IngestionService()
 
     def get_all(self) -> list[dict[str, Any]]:
-        """Return complaint records loaded from a named dataset or all raw exports."""
-        try:
-            dataframe = self.ingestion_service.load_dataset("complaints")
-            return self.ingestion_service.to_records(dataframe)
-        except FileNotFoundError:
-            return self.get_all_available()
+        """Return complaint records from every available raw CSV export."""
+        return self.get_all_available()
 
     def get_all_available(self) -> list[dict[str, Any]]:
         """Return complaint records from every available raw CSV export."""
