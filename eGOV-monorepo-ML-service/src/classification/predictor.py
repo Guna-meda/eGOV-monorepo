@@ -127,7 +127,7 @@ def _load_model():
         return joblib.load(model_path)
 
     for model_dir in SPLIT_MODEL_DIR_CANDIDATES:
-        #classifier_path = model_dir / "linear_svm_servicecode.pkl"
+        #classifier_path = model_dir / "linear_svm_servicecode.pkl"  # point to new rf model for now
         classifier_path = model_dir / "random_forest_servicecode.pkl"
         vectorizer_path = model_dir / "tfidf_vectorizer.pkl"
         label_encoder_path = model_dir / "label_encoder.pkl"
