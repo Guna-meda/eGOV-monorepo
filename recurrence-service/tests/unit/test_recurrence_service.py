@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from app.services.recurrence_service import RecurrenceService
 
 
@@ -13,85 +11,68 @@ class FakeRepository:
         return self.records
 
 
-def test_detect_recurring_months_flags_hotspot_by_ward_service_and_month() -> None:
+def test_full_table_calculates_recurrence_from_distinct_historical_years() -> None:
     service = RecurrenceService(
         repository=FakeRepository(
             [
-                {
-                    "Ward Name": "Bellandur",
-                    "Category": "Electrical",
-                    "Grievance Date": "2021-05-10 10:00:00",
-                },
-                {
-                    "Ward Name": "Bellandur",
-                    "Category": "Electrical",
-                    "Grievance Date": "2022-05-12 10:00:00",
-                },
-                {
-                    "Ward Name": "Bellandur",
-                    "Category": "Electrical",
-                    "Grievance Date": "2022-05-13 10:00:00",
-                },
-                {
-                    "Ward Name": "Bellandur",
-                    "Category": "Electrical",
-                    "Grievance Date": "2023-06-01 10:00:00",
-                },
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2021-05-10 10:00:00"},
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2022-05-12 10:00:00"},
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2022-05-13 10:00:00"},
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2023-06-01 10:00:00"},
             ]
         )
     )
 
-    response = service.detect_recurring_months()
+    results = service.get_recurrence_table()
 
-    assert response.total_records == 4
-    assert response.years_in_dataset == [2021, 2022, 2023]
-    assert len(response.results) == 1
-
-    result = response.results[0]
+    assert len(results) == 1
+    result = results[0]
     assert result.ward_id == "bellandur"
     assert result.ward_name == "Bellandur"
     assert result.serviceCode == "Electrical"
     assert result.is_hotspot is True
-    assert result.recurrence_score == pytest.approx(0.6667)
-    assert [month.month for month in result.recurring_months] == [5]
-    assert result.recurring_months[0].years_with_complaints == 2
+    assert result.recurrence_score == 0.5
+    assert [month.month for month in result.recurring_months] == [5, 6]
+    assert result.recurring_months[0].month_name == "May"
+    assert result.recurring_months[0].years == [2021, 2022]
+    assert result.recurring_months[0].is_hotspot is True
+    assert result.recurring_months[1].years == [2023]
+    assert result.recurring_months[1].is_hotspot is False
+    assert result.monthly_counts["2022"][4] == 2
+    assert len(result.monthly_counts["2022"]) == 12
 
-    may_2022 = [
-        count
-        for count in result.monthly_counts
-        if count.year == 2022 and count.month == 5
-    ][0]
-    assert may_2022.complaint_count == 2
 
-
-def test_detect_recurring_months_can_use_sub_category_as_service_code() -> None:
+def test_full_table_keeps_non_hotspot_rows_and_compact_yearly_month_counts() -> None:
     service = RecurrenceService(
         repository=FakeRepository(
             [
-                {
-                    "Ward Name": "Jakkur",
-                    "Category": "Electrical",
-                    "Sub Category": "Street Light Not Working",
-                    "Grievance Date": "2021-01-10 10:00:00",
-                },
-                {
-                    "Ward Name": "Jakkur",
-                    "Category": "Electrical",
-                    "Sub Category": "Street Light Not Working",
-                    "Grievance Date": "2022-01-10 10:00:00",
-                },
+                {"Ward Name": "Jakkur", "Category": "Electrical", "Grievance Date": "2021-01-10 10:00:00"},
+                {"Ward Name": "Jakkur", "Category": "Water Supply", "Grievance Date": "2022-01-10 10:00:00"},
             ]
         )
     )
 
-    response = service.detect_recurring_months(service_code_field="sub_category")
+    results = service.get_recurrence_table()
 
-    assert response.service_code_field == "sub_category"
-    assert response.results[0].serviceCode == "Street Light Not Working"
+    assert [row.serviceCode for row in results] == ["Electrical", "Water Supply"]
+    assert all(row.is_hotspot is False for row in results)
+    assert all(set(row.monthly_counts) == {"2021", "2022"} for row in results)
+    assert all(len(counts) == 12 for row in results for counts in row.monthly_counts.values())
 
 
-def test_detect_recurring_months_rejects_unknown_service_code_field() -> None:
-    service = RecurrenceService(repository=FakeRepository([]))
+def test_single_ward_detail_returns_only_that_wards_rows() -> None:
+    service = RecurrenceService(
+        repository=FakeRepository(
+            [
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2021-05-10 10:00:00"},
+                {"Ward Name": "Bellandur", "Category": "Electrical", "Grievance Date": "2022-05-12 10:00:00"},
+                {"Ward Name": "Jakkur", "Category": "Electrical", "Grievance Date": "2022-05-12 10:00:00"},
+            ]
+        )
+    )
 
-    with pytest.raises(ValueError, match="service_code_field"):
-        service.detect_recurring_months(service_code_field="unknown")
+    results = service.get_ward_recurrence("Bellandur")
+
+    assert len(results) == 1
+    assert results[0].ward_id == "bellandur"
+    assert results[0].recurring_months[0].month == 5
