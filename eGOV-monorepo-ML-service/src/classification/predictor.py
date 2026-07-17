@@ -19,12 +19,14 @@ MODEL_CANDIDATES = [
 ]
 
 SPLIT_MODEL_DIR_CANDIDATES = [
-    PROJECT_ROOT / "models" / "category_classifier_rf",
+    #PROJECT_ROOT / "models" / "category_classifier_rf",
+    PROJECT_ROOT / "models" / "category_classifier",
     PROJECT_ROOT / "models" / "classification",
 ]
 
 MENU_LOOKUP_CANDIDATES = [
-    PROJECT_ROOT / "models" / "category_classifier_rf" / "servicecode_to_menupath.pkl",
+    #PROJECT_ROOT / "models" / "category_classifier_rf" / "servicecode_to_menupath.pkl",
+    PROJECT_ROOT / "models" / "category_classifier" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "classification" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "models" / "servicecode_to_menupath.pkl",
     PROJECT_ROOT / "src" / "classification" / "servicecode_to_menupath.pkl",
@@ -127,8 +129,8 @@ def _load_model():
         return joblib.load(model_path)
 
     for model_dir in SPLIT_MODEL_DIR_CANDIDATES:
-        #classifier_path = model_dir / "linear_svm_servicecode.pkl"  # point to new rf model for now
-        classifier_path = model_dir / "random_forest_servicecode.pkl"
+        classifier_path = model_dir / "linear_svm_servicecode.pkl"  # point to new rf model for now
+        #classifier_path = model_dir / "random_forest_servicecode.pkl"
         vectorizer_path = model_dir / "tfidf_vectorizer.pkl"
         label_encoder_path = model_dir / "label_encoder.pkl"
         if classifier_path.exists() and vectorizer_path.exists() and label_encoder_path.exists():
@@ -296,9 +298,9 @@ def _urgency(text: str) -> tuple[str, list[str]]:
 
     final_score = time_score + critical_score + vulnerability_score + repetition_score
 
-    if final_score <= 4:
+    if final_score <= 3:
         urgency = "low"
-    elif final_score <= 9:
+    elif final_score <= 8:
         urgency = "medium"
     else:
         urgency = "high"
