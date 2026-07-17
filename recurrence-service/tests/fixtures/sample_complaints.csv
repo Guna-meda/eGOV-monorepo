@@ -1,0 +1,3 @@
+complaint_id,category,ward,description,created_at
+1,Water Leakage,10,Leaking pipe near house,2024-01-01
+2,Water Leakage,10,Same issue repeated,2024-01-02
