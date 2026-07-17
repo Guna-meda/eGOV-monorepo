@@ -30,3 +30,6 @@ __pycache__/
 
 # pickle files
 *.pkl
+
+# documents
+docs
