@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db, complaints, complaintMedia } from '@egov/shared';
+import { db, complaints, complaintMedia ,boundary_layers} from '@egov/shared';
 import type { CreateComplaintDto, MlAnalysisDto ,Bounds} from '@egov/shared'; //im not sure how bounds is gonna be imported here lets see
 
 import { sql } from 'drizzle-orm';
@@ -7,6 +7,27 @@ import { sql } from 'drizzle-orm';
 export const createComplaint = async (data: CreateComplaintDto) => {
   try {
     return await db.transaction(async (tx) => {
+      // 1. Find the ward containing the complaint location
+      let wardId: string | undefined;
+
+      if (data.latitude != null && data.longitude != null) {
+        const [ward] = await tx
+          .select({ id: boundary_layers.id })
+          .from(boundary_layers)
+          .where(sql`
+              ${boundary_layers.layerType} = 'ward'
+              AND ST_Covers(
+                ${boundary_layers.geom},
+                ST_SetSRID(
+                  ST_MakePoint(${data.longitude}, ${data.latitude}),
+                  4326
+                )
+              )
+            `)
+          .limit(1);
+
+        wardId = ward?.id;
+      }
       const [newComplaint] = await tx
         .insert(complaints)
         .values({
@@ -19,6 +40,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
               ST_MakePoint(${data.longitude}, ${data.latitude}),
               4326
             )`,
+          wardId,
         })
         .returning();
 
@@ -38,7 +60,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
 
         savedMedia = await tx.insert(complaintMedia).values(mediaValues).returning();
       }
-
+      //3. TODO get warduuid for complaint by point in polygon query
       return { ...newComplaint, media: savedMedia };
     });
   } catch (error) {
@@ -60,29 +82,35 @@ export async function getComplaintsInBounds(bounds: Bounds) {
 
     console.log('Bounds received by complaint repository', bounds)
     try{
+
       const result = await db.execute(sql`
-          SELECT *
-          FROM complaints
-          WHERE ST_Within(
-              location,
-              ST_MakeEnvelope(
-                  ${west},
-                  ${south},
-                  ${east},
-                  ${north},
-                  4326
-              )
+        SELECT
+          c.*,
+          json_build_object(
+            'id', b.id,
+            'city', b.city,
+            'layerType', b.layer_type,
+            'level', b.level,
+            'properties', b.properties
+          ) AS ward
+        FROM complaints c
+        LEFT JOIN boundary_layers b
+          ON c.ward_id = b.id
+        WHERE ST_Within(
+          c.location,
+          ST_MakeEnvelope(
+            ${west},
+            ${south},
+            ${east},
+            ${north},
+            4326
           )
+        )
       `);
-      const response = result.rows.map(row=>{
-        return {
-          id: row.id,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          original_title: row.original_title
-        }
-      })
-      console.log("Complaints in area: ", response)
+      //TODO donot return this response, return basically full thing as is + joined result on wardid
+
+      //TODO here for each row in result, populate ward field using FK in wardid, and return direct result.rows
+      console.log("Complaints in area: ", result.rows)
       return result.rows;
     }
     catch(err){

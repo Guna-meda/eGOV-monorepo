@@ -7,6 +7,7 @@ import './leaflet-icon-fix';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css'
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css'
+import "./global.css";
 
 const router = createBrowserRouter(routes)
 createRoot(document.getElementById('root')!).render(

@@ -1,1 +1,12 @@
-@import "tailwindcss";
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 12px;
+}
+
+.leaflet-popup-tip-container {
+  margin: 0;
+}
