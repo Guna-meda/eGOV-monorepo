@@ -1,15 +1,14 @@
 {
   "name": "gis-service",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint src",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "lint": "eslint src"
   },
   "keywords": [],
   "author": "",

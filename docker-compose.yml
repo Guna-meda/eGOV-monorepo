@@ -20,22 +20,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
   migrate:
-      build:
-        context: .
-        dockerfile: complaint-service/Dockerfile   # or a generic root Dockerfile
-      working_dir: /workspace
-      volumes:
-        - .:/workspace
-      depends_on:
-        postgres:
-          condition: service_healthy
-      command: >
-        sh -c "
-        npm --workspace complaint-service run db:migrate &&
-        npm --workspace gis-service run db:migrate
-        "
-      restart: "no"
+    build:
+      context: .
+      dockerfile: complaint-service/Dockerfile
+
+    working_dir: /workspace
+
+    volumes:
+      - .:/workspace
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql://grievance:grievance@postgres:5432/grievance_db
+
+    command: >
+      sh -c "
+      npm run db:migrate
+      "
+
+    restart: "no"
 
   redis:
     image: redis:8
@@ -55,7 +63,7 @@ services:
 
     working_dir: /workspace/complaint-service
 
-    command: sh -c "npm run db:migrate && npm run dev"
+    command: sh -c "npm run dev"
 
     depends_on:
           migrate:
@@ -74,7 +82,7 @@ services:
 
     working_dir: /workspace/gis-service
 
-    command: sh -c "npm run db:migrate && npm run dev"
+    command: sh -c "npm run dev"
 
     depends_on:
       migrate:

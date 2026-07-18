@@ -1,6 +1,6 @@
 {
-  "id": "72a9e56d-26fa-4e71-adab-00cfa96fc714",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "54e7ceca-1615-4b40-8b4f-a27fbe8824f5",
+  "prevId": "db954397-ded4-42a7-90b1-69b25552fd7f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -225,6 +225,86 @@
         }
       },
       "indexes": {},
+      "foreignKeys": {
+        "complaints_ward_id_boundary_layers_id_fk": {
+          "name": "complaints_ward_id_boundary_layers_id_fk",
+          "tableFrom": "complaints",
+          "tableTo": "boundary_layers",
+          "columnsFrom": [
+            "ward_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.boundary_layers": {
+      "name": "boundary_layers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "layer_type": {
+          "name": "layer_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "properties": {
+          "name": "properties",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geom": {
+          "name": "geom",
+          "type": "geometry",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "boundary_layers_geom_idx": {
+          "name": "boundary_layers_geom_idx",
+          "columns": [
+            {
+              "expression": "geom",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gist",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

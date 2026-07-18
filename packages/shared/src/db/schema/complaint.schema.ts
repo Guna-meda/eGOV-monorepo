@@ -9,6 +9,7 @@ import {
   real,
   customType
 } from 'drizzle-orm/pg-core';
+import { boundary_layers } from "./boundary_layers.schema.js"
 
 const geometry = customType<{ data: string }>({
     dataType() {
@@ -31,8 +32,11 @@ export const complaints = pgTable('complaints', {
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
   location: geometry('location'),
-  wardId: uuid('ward_id'),
 
+  wardId: uuid("ward_id").references(() => boundary_layers.id, {
+  onDelete: "set null",
+  onUpdate: "cascade",
+}),
 category: varchar("category", {
   length: 100,
 }),
