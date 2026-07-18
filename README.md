@@ -45,6 +45,17 @@ http://localhost:5173
 
 - You may see ESLint errors related to `tsconfigRootDir`. These do not affect the application's functionality.
 
+- `docker compose up` may fail due to a Docker Compose orchestration issue.
+
+Workaround:
+
+```bash
+docker compose up -d postgres redis
+docker compose run --rm migrate
+docker compose up complaint-service gis-service frontend
+```
+
+This issue is under investigation.
 ---
 
 # Upload Ward Boundaries
@@ -102,4 +113,11 @@ docker compose up
 ```bash
 docker compose down
 docker compose up
+```
+
+## If you modify the schema at `packages/shared/src/db/schema`
+
+cd to root of repo and run
+```bash
+npm db:migrate
 ```
