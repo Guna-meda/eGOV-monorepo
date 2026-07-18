@@ -23,6 +23,10 @@ cd packages/shared
 npm run build
 ```
 
+## Setup env variables
+Just follow .env.example and copy it to .env under /frontend, /gis-service, 
+and /complaint-service
+
 Return to the repository root and start the application:
 
 ```bash
