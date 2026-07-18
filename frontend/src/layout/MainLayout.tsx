@@ -70,7 +70,7 @@ export default function MainLayout() {
           </Toolbar>
         </AppBar>
 
-        <Box component="main" sx={{ flexGrow: 1, p: 2, maxWidth: 600, width: "100%", mx: "auto" }}>
+        <Box component="main" sx={{ display:"flex",flex: 1, p: 2, maxWidth: 600, width: "100%", mx: "auto" , minHeight:0}}>
           <Outlet />
         </Box>
 

@@ -15,11 +15,9 @@ export type {
   MlAnalysisDto,
   UpdateComplaintStatusDto,
   ComplaintStatus,
+  Bounds
 } from './types/complaint.types.js';
 
 // db
 export { db, default as pool } from './db/index.js';
 export * from './db/schema/index.js';
-
-// swagger
-export { baseSwaggerDef } from './swagger/swaggerDef.js';

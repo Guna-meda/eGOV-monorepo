@@ -1,13 +1,13 @@
 import { type RouteObject } from "react-router"
 import MainLayout from './layout/MainLayout'
 import Home from './pages/Home'
-import Map from './pages/Map'
+import MapPage from './pages/MapPage'
 import Raise from './pages/Raise'
 import Updates from './pages/Updates'
 import Profile from './pages/Profile'
 import ErrorPage from "./pages/ErrorPage"
 import {grievanceAction} from "./actions/grievanceUploadAction"
-
+import {mapLoader} from "./loaders/mapLoader"
 const routes:RouteObject[] = [
     {
         path:'/',
@@ -20,7 +20,8 @@ const routes:RouteObject[] = [
             },
             {
                 path: 'map',
-                Component: Map
+                Component: MapPage,
+                loader: mapLoader
             },
             {
                 path: 'raise',

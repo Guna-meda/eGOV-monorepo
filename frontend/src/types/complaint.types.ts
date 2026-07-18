@@ -24,3 +24,10 @@ export type ComplaintStatus =
   | 'In Progress'
   | 'Resolved'
   | 'Rejected';
+
+export interface Bounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}

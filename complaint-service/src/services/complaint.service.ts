@@ -1,7 +1,8 @@
 import * as complaintRepository from '../repositories/complaint.repository.js';
 import { ApiError, logger } from '@egov/shared';
-import type { CreateComplaintDto } from '@egov/shared';
+import type { CreateComplaintDto, Bounds } from '@egov/shared';
 import { complaintQueue } from '../queues/complaint.queue.js';
+
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   if (!data.originalTitle?.trim()) {
@@ -34,3 +35,12 @@ export const getComplaintById = async (id: string) => {
 
   return complaint;
 };
+
+export const getComplaintsInBounds = async (bounds:Bounds)=>{
+  console.log('Bounds received in complaint service', bounds)
+  if(!bounds.north || !bounds.south || !bounds.east || !bounds.west) throw new ApiError(400,'Bounds not existing!');
+  const complaints = await complaintRepository.getComplaintsInBounds(bounds);
+  
+  console.log('Complaints!')
+  return complaints;
+}
