@@ -79,11 +79,11 @@ export default function MainLayout() {
           value={location.pathname}
           sx={{ position: "sticky", bottom: 0, zIndex: "appBar" }}
         >
-          <BottomNavigationAction label="Home" value="/" icon={<HomeIcon />} component={Link} to="/" />
-          <BottomNavigationAction label="Map" value="/map" icon={<MapIcon />} component={Link} to="/map" />
-          <BottomNavigationAction label="Raise" value="/raise" icon={<AddCircleIcon />} component={Link} to="/raise" />
-          <BottomNavigationAction label="Updates" value="/updates" icon={<NotificationsNoneIcon />} component={Link} to="/updates" />
-          <BottomNavigationAction label="Me" value="/profile" icon={<AccountCircleIcon />} component={Link} to="/profile" />
+          <BottomNavigationAction label="Home" value="/" icon={<HomeIcon />} component={Link} to="/citizen" />
+          <BottomNavigationAction label="Map" value="/map" icon={<MapIcon />} component={Link} to="/citizen/map" />
+          <BottomNavigationAction label="Raise" value="/raise" icon={<AddCircleIcon />} component={Link} to="/citizen/raise" />
+          <BottomNavigationAction label="Updates" value="/updates" icon={<NotificationsNoneIcon />} component={Link} to="/citizen/updates" />
+          <BottomNavigationAction label="Me" value="/profile" icon={<AccountCircleIcon />} component={Link} to="/citizen/profile" />
         </BottomNavigation>
 
       </Box>

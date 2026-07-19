@@ -31,7 +31,7 @@ const orangeIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 export default function MapPage(){
-    let navigate = useNavigate();
+    const navigate = useNavigate();
 
     const [complaints, setComplaints] = useState<Complaint[]>([]);
 
@@ -101,7 +101,7 @@ export default function MapPage(){
                 severity={complaint.severityLabel}
                 onClick={() => {
                     console.log("Clicked", complaint.id);
-                    navigate(`/complaints/${complaint.id}`, {
+                    navigate(`/citizen/complaints/${complaint.id}`, {
                         state : {complaint}
                     });
                 }}

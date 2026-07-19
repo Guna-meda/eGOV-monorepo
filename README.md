@@ -45,8 +45,9 @@ http://localhost:5173
 
 - You may see ESLint errors related to `tsconfigRootDir`. These do not affect the application's functionality.
 
-- `docker compose up` may fail due to a Docker Compose orchestration issue.
+- Leaflet map will not render unless at least one of its ancestor components has a fixed definite height(e.g 100vh). Ideally the map component shouldn't impose styling decision on its parent layout. Probably could wrap mapcomponent in a Container with fixed height of 100vh.
 
+- `docker compose up` may fail due to a Docker Compose orchestration issue.
 Workaround:
 
 ```bash
@@ -55,7 +56,6 @@ docker compose run --rm migrate
 docker compose up complaint-service gis-service frontend
 ```
 
-This issue is under investigation.
 ---
 
 # Upload Ward Boundaries
