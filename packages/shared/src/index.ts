@@ -15,7 +15,10 @@ export type {
   MlAnalysisDto,
   UpdateComplaintStatusDto,
   ComplaintStatus,
-  Bounds
+  Bounds,
+  Complaint,
+  Ward,
+  WardProperties
 } from './types/complaint.types.js';
 
 // db

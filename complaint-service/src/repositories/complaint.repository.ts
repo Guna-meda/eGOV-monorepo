@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db, complaints, complaintMedia ,boundary_layers} from '@egov/shared';
-import type { CreateComplaintDto, MlAnalysisDto ,Bounds} from '@egov/shared'; //im not sure how bounds is gonna be imported here lets see
+import type { CreateComplaintDto, MlAnalysisDto ,Bounds, Complaint} from '@egov/shared'; //im not sure how bounds is gonna be imported here lets see
 
 import { sql } from 'drizzle-orm';
 
@@ -73,9 +73,61 @@ export const getAllComplaints = async () => {
   return await db.select().from(complaints);
 };
 
-export const getComplaintById = async (id: string) => {
-  const [complaint] = await db.select().from(complaints).where(eq(complaints.id, id));
-  return complaint;
+export const getComplaintById = async (
+  id: string
+): Promise<Complaint> => {
+  
+  try{
+   const result = await db.execute(sql`
+        SELECT
+          c.id AS "id",
+          c.original_title AS "originalTitle",
+          c.translated_title AS "translatedTitle",
+          c.description AS "description",
+          c.original_language AS "originalLanguage",
+          c.translated_text AS "translatedText",
+          c.frequency AS "frequency",
+          c.incident_occurred_at AS "incidentOccurredAt",
+          c.user_id AS "userId",
+          c.latitude AS "latitude",
+          c.longitude AS "longitude",
+          c.ward_id AS "wardId",
+          c.category AS "category",
+          c.subcategory AS "subcategory",
+          c.sentiment AS "sentiment",
+          c.severity_score AS "severityScore",
+          c.severity_label AS "severityLabel",
+          c.risk_score AS "riskScore",
+          c.risk_label AS "riskLabel",
+          c.ml_status AS "mlStatus",
+          c.status AS "status",
+          c.created_at AS "createdAt",
+          c.updated_at AS "updatedAt",
+          json_build_object(
+            'id', b.id,
+            'city', b.city,
+            'layerType', b.layer_type,
+            'level', b.level,
+            'properties', b.properties
+          ) AS ward
+        FROM complaints c
+        LEFT JOIN boundary_layers b
+          ON c.ward_id = b.id
+        WHERE c.id = ${id}
+        LIMIT 1;
+      `);
+      const complaint = result.rows[0];
+
+      if (!complaint) {
+        throw new Error(`Complaint not found by id: ${id}`)
+      }
+      console.log('Complaint by Id:',id,' complaint: ', complaint)
+      return complaint as unknown as Complaint;
+  }
+    catch(err){
+      console.dir(err, { depth: null });
+      throw err;
+    }
 };
 export async function getComplaintsInBounds(bounds: Bounds) {
     const { north, south, east, west } = bounds;
@@ -85,7 +137,29 @@ export async function getComplaintsInBounds(bounds: Bounds) {
 
       const result = await db.execute(sql`
         SELECT
-          c.*,
+          c.id AS "id",
+          c.original_title AS "originalTitle",
+          c.translated_title AS "translatedTitle",
+          c.description AS "description",
+          c.original_language AS "originalLanguage",
+          c.translated_text AS "translatedText",
+          c.frequency AS "frequency",
+          c.incident_occurred_at AS "incidentOccurredAt",
+          c.user_id AS "userId",
+          c.latitude AS "latitude",
+          c.longitude AS "longitude",
+          c.ward_id AS "wardId",
+          c.category AS "category",
+          c.subcategory AS "subcategory",
+          c.sentiment AS "sentiment",
+          c.severity_score AS "severityScore",
+          c.severity_label AS "severityLabel",
+          c.risk_score AS "riskScore",
+          c.risk_label AS "riskLabel",
+          c.ml_status AS "mlStatus",
+          c.status AS "status",
+          c.created_at AS "createdAt",
+          c.updated_at AS "updatedAt",
           json_build_object(
             'id', b.id,
             'city', b.city,
@@ -107,9 +181,7 @@ export async function getComplaintsInBounds(bounds: Bounds) {
           )
         )
       `);
-      //TODO donot return this response, return basically full thing as is + joined result on wardid
-
-      //TODO here for each row in result, populate ward field using FK in wardid, and return direct result.rows
+  
       console.log("Complaints in area: ", result.rows)
       return result.rows;
     }

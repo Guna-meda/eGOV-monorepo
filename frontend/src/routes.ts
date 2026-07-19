@@ -6,6 +6,7 @@ import Raise from './pages/Raise'
 import Updates from './pages/Updates'
 import Profile from './pages/Profile'
 import ErrorPage from "./pages/ErrorPage"
+import Complaint from "./pages/Complaint"
 import {grievanceAction} from "./actions/grievanceUploadAction"
 import {mapLoader} from "./loaders/mapLoader"
 const routes:RouteObject[] = [
@@ -35,6 +36,10 @@ const routes:RouteObject[] = [
             {
                 path: 'profile',
                 Component: Profile
+            },
+            {
+                path: 'complaints/:complaintId',
+                Component: Complaint
             }
         ]
     }
