@@ -25,6 +25,7 @@ class DataLoader:
         self,
         raw_dir: str | Path | None = None,
         required_columns: Optional[Mapping[str, Sequence[str]]] = None,
+        usecols: Sequence[str] | None = None,
         logger: Optional[logging.Logger] = None,
     ) -> None:
         """Initialize the loader with a raw data directory and optional schema rules."""
@@ -35,6 +36,7 @@ class DataLoader:
             self.raw_dir = Path(raw_dir)
 
         self.required_columns = dict(required_columns or {})
+        self.usecols = set(usecols) if usecols is not None else None
         self.logger = logger or logging.getLogger(__name__)
         self._datasets: Dict[str, pd.DataFrame] = {}
 
@@ -75,7 +77,7 @@ class DataLoader:
             return None
 
         try:
-            dataframe = pd.read_csv(file_path)
+            dataframe = pd.read_csv(file_path, usecols=self.usecols)
         except FileNotFoundError:
             self.logger.warning("Dataset file not found: %s", file_path)
             return None

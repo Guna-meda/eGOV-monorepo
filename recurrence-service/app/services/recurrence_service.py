@@ -27,15 +27,18 @@ class RecurrenceService:
     def __init__(self, repository: ComplaintHistoryRepository | None = None) -> None:
         """Initialize the service with an optional complaint repository."""
         self.repository = repository
+        self._recurrence_table_cache: list[WardServiceRecurrence] | None = None
 
     def get_recurrence_table(self) -> list[WardServiceRecurrence]:
         """Return the complete ward and service-code recurrence table."""
-        return self._build_recurrence_table()
+        if self._recurrence_table_cache is None:
+            self._recurrence_table_cache = self._build_recurrence_table()
+        return self._recurrence_table_cache
 
     def get_ward_recurrence(self, ward_id: str) -> list[WardServiceRecurrence]:
         """Return all recurrence rows and monthly counts for one ward."""
         normalized_ward_id = self._slugify(ward_id)
-        return [row for row in self._build_recurrence_table() if row.ward_id == normalized_ward_id]
+        return [row for row in self.get_recurrence_table() if row.ward_id == normalized_ward_id]
 
     def _build_recurrence_table(self) -> list[WardServiceRecurrence]:
         """Apply the required historical month-by-year recurrence formula."""

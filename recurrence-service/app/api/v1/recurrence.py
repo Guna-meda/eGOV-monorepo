@@ -1,5 +1,7 @@
 """API routes for recurrence detection."""
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 
 from app.dependencies.container import get_recurrence_service
@@ -7,6 +9,7 @@ from app.models.recurrence import WardServiceRecurrence
 from app.services.recurrence_service import RecurrenceService
 
 router = APIRouter(tags=["Recurrence Service"])
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -22,6 +25,7 @@ def get_recurrence_table() -> list[WardServiceRecurrence]:
     try:
         return service.get_recurrence_table()
     except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Failed to build recurrence table")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from exc
 
 
@@ -37,6 +41,7 @@ def get_ward_recurrence(ward_id: str) -> list[WardServiceRecurrence]:
     try:
         results = service.get_ward_recurrence(ward_id)
     except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Failed to build recurrence data for ward '%s'", ward_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from exc
 
     if not results:
