@@ -6,7 +6,7 @@ from app.dependencies.container import get_recurrence_service
 from app.models.recurrence import WardServiceRecurrence
 from app.services.recurrence_service import RecurrenceService
 
-router = APIRouter(tags=["recurrence"])
+router = APIRouter(tags=["Recurrence Service"])
 
 
 @router.get(
@@ -14,6 +14,7 @@ router = APIRouter(tags=["recurrence"])
     response_model=list[WardServiceRecurrence],
     summary="Full ward recurrence table",
     description="Calculate recurrence from historical complaint CSV data in the local data folder.",
+    include_in_schema=False,
 )
 def get_recurrence_table() -> list[WardServiceRecurrence]:
     """Return recurrence data for every ward and service code."""

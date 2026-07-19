@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from src.api.schemas import AnalyzeRequest, AnalyzeResponse
 from src.classification.predictor import predict
 
-router = APIRouter()
+router = APIRouter(tags=["Complaint Service"])
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)

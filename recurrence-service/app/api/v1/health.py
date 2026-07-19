@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-router = APIRouter(tags=["health"])
+router = APIRouter(prefix="/recurrence", tags=["Recurrence Service"])
 
 
 @router.get("/health", summary="Health check", description="Returns the service health status.")

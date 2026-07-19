@@ -11,7 +11,7 @@ from app.services.prediction_service import (
 
 router = APIRouter(
     prefix="/severity",
-    tags=["Severity Prediction"]
+    tags=["Severity Service"]
 )
 
 
