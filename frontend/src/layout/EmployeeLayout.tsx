@@ -21,8 +21,8 @@ const drawerWidth = 320;
 
 const navItems = [
   {
-    label: "Map",
-    path: "/employee/map",
+    label: "Ward Analytics",
+    path: "/employee/wardanalytics",
     icon: <MapOutlinedIcon />,
   },
   {

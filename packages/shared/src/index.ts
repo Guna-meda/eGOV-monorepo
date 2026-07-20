@@ -18,7 +18,9 @@ export type {
   Bounds,
   Complaint,
   Ward,
-  WardProperties
+  WardProperties,
+  WardAnalyticsResponse,
+  ServiceAnalytics
 } from './types/complaint.types.js';
 
 // db

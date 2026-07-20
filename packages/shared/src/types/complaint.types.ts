@@ -115,3 +115,25 @@ export interface Ward {
   level: number | null;
   properties: WardProperties;
 }
+
+export interface RecurringMonth {
+  month: number;
+  month_name: string;
+  years: number[];
+  recurrence_score: number;
+  is_hotspot: boolean;
+}
+
+export interface ServiceAnalytics {
+  ward_id: string;
+  ward_name: string;
+  serviceCode: string;
+  recurring_months: RecurringMonth[];
+  years_observed: number[];
+  recurrence_score: number;
+  is_hotspot: boolean;
+  monthly_counts: Record<string, number[]>;
+}
+
+// The /recurrence/:wardName endpoint returns one entry per service code
+export type WardAnalyticsResponse = ServiceAnalytics[];

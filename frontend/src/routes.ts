@@ -9,6 +9,7 @@ import Profile from './pages/Profile'
 import ErrorPage from "./pages/ErrorPage"
 import Complaint from "./pages/Complaint"
 import ComplaintsView from "./pages/ComplaintsView"
+import WardAnalytics from "./pages/WardAnalytics"
 import {grievanceAction} from "./actions/grievanceUploadAction"
 import {mapLoader} from "./loaders/mapLoader"
 const routes:RouteObject[] = [
@@ -57,8 +58,8 @@ const routes:RouteObject[] = [
                         Component: ComplaintsView
                     },
                     {
-                        path: 'map',
-                        Component: MapPage, //will replace with separate map component tailored for employee
+                        path: 'wardanalytics',
+                        Component: WardAnalytics,
                         loader: mapLoader
                     }
                 ]
