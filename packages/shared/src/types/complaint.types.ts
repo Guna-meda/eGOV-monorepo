@@ -11,6 +11,15 @@ export interface CreateComplaintDto {
   latitude?: number;
   longitude?: number;
   media?: MediaDto[];
+
+  // Supplied by the frontend, which calls the ML service directly
+  // before submitting the complaint.
+  category?: string;
+  subcategory?: string;
+  sentiment?: string;
+  riskScore?: number;
+  riskLabel?: string;
+  mlStatus?: string;
 }
 
 export interface MlAnalysisDto {
@@ -78,6 +87,9 @@ export interface Complaint {
   mlStatus: string;
 
   status: string;
+
+  slaHours: number;
+  escalationLevel: number;
 
   createdAt: string;
   updatedAt: string;
