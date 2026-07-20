@@ -41,6 +41,12 @@ export const createComplaint = async (data: CreateComplaintDto) => {
               4326
             )`,
           wardId,
+          category: data.category,
+          subcategory: data.subcategory,
+          sentiment: data.sentiment,
+          riskScore: data.riskScore,
+          riskLabel: data.riskLabel,
+          mlStatus: data.mlStatus ?? 'COMPLETED',
         })
         .returning();
 
@@ -101,6 +107,8 @@ export const getComplaintById = async (
           c.risk_label AS "riskLabel",
           c.ml_status AS "mlStatus",
           c.status AS "status",
+          c.sla_hours AS "slaHours",
+          c.escalation_level AS "escalationLevel",
           c.created_at AS "createdAt",
           c.updated_at AS "updatedAt",
           json_build_object(
@@ -158,6 +166,8 @@ export async function getComplaintsInBounds(bounds: Bounds) {
           c.risk_label AS "riskLabel",
           c.ml_status AS "mlStatus",
           c.status AS "status",
+          c.sla_hours AS "slaHours",
+          c.escalation_level AS "escalationLevel",
           c.created_at AS "createdAt",
           c.updated_at AS "updatedAt",
           json_build_object(
@@ -209,6 +219,23 @@ export const updateMlAnalysis = async (complaintId: string, data: MlAnalysisDto)
     .returning();
 
   return updatedComplaint;
+};
+
+export const updateSeverity = async (
+  complaintId: string,
+  data: { severityScore: number; severityLabel: string }
+) => {
+  const [updated] = await db
+    .update(complaints)
+    .set({
+      severityScore: data.severityScore,
+      severityLabel: data.severityLabel,
+      updatedAt: new Date(),
+    })
+    .where(eq(complaints.id, complaintId))
+    .returning();
+
+  return updated;
 };
 
 export const updateMlStatus = async (complaintId: string, status: string) => {
