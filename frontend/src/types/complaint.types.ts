@@ -11,6 +11,14 @@ export interface CreateComplaintDto {
   latitude?: number;
   longitude?: number;
   media?: MediaDto[]; // Added to accept nested media items
+
+  // Filled in from the ML service response before submitting
+  category?: string;
+  subcategory?: string;
+  sentiment?: string;
+  riskScore?: number;
+  riskLabel?: string;
+  mlStatus?: string;
 }
 
 export interface UpdateComplaintStatusDto {
