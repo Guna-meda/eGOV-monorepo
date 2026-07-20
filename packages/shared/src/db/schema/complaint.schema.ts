@@ -87,6 +87,10 @@ mlStatus: varchar(
   .notNull(),
 
   status: varchar('status', { length: 50 }).default('Submitted').notNull(),
+
+  slaHours: integer('sla_hours').default(0).notNull(),
+  escalationLevel: integer('escalation_level').default(0).notNull(),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
