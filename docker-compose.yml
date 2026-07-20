@@ -30,6 +30,8 @@ services:
 
     volumes:
       - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
 
     depends_on:
       postgres:
@@ -63,6 +65,9 @@ services:
 
     volumes:
       - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
+      - /workspace/complaint-service/node_modules
 
   gis-service:
     build:
@@ -82,6 +87,9 @@ services:
 
     volumes:
       - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
+      - /workspace/gis-service/node_modules
 
   frontend:
     build:
@@ -101,6 +109,8 @@ services:
 
     volumes:
       - .:/workspace
+      - /workspace/node_modules
+      - /workspace/frontend/node_modules
 
     environment:
       CHOKIDAR_USEPOLLING: "true"
