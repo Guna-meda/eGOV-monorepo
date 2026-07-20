@@ -8,8 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint src",
-    "worker": "tsx src/workers/ml.worker.ts"
+    "lint": "eslint src"
   },
   "keywords": [],
   "author": "",
@@ -18,13 +17,11 @@
     "@egov/shared": "file:../packages/shared",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "bullmq": "^5.78.0",
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
-    "ioredis": "^5.11.1",
     "morgan": "^1.11.0",
     "multer": "^2.1.1",
     "pg": "^8.21.0",
