@@ -15,15 +15,9 @@ interface ComplaintPopupCardProps {
   ward?: string;
   createdAt: string;
   status: string;
-  severity: "HIGH" | "MEDIUM" | "LOW";
+  severity: "HIGH" | "MEDIUM" | "LOW" | "CRITICAL";
   onClick?: () => void;
 }
-
-const severityColors = {
-  HIGH: "error",
-  MEDIUM: "warning",
-  LOW: "success",
-} as const;
 
 export default function ComplaintPopupCard({
   title,
@@ -62,12 +56,18 @@ export default function ComplaintPopupCard({
             <Chip
               size="small"
               label={severity}
-              color={
-                severityColors[
-                  severity as keyof typeof severityColors
-                ] ?? "default"
-              }
-              sx={{ fontWeight: 700 }}
+              sx={{
+                fontWeight: 700,
+                color: "common.white",
+                bgcolor:
+                  severity === "LOW"
+                    ? "success.main"
+                    : severity === "MEDIUM"
+                    ? "warning.light"
+                    : severity === "HIGH"
+                    ? "warning.main"
+                    : "error.main",
+              }}
             />
           </Stack>
 

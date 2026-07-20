@@ -70,7 +70,7 @@ export interface Complaint {
   sentiment: string | null;
 
   severityScore: number | null;
-  severityLabel: "LOW" | "MEDIUM" | "HIGH";
+  severityLabel: "LOW" | "MEDIUM" | "HIGH" |"CRITICAL";
 
   riskScore: number | null;
   riskLabel: string | null;

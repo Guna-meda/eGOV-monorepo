@@ -30,6 +30,14 @@ const orangeIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+const yellowIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 export default function MapPage(){
     const navigate = useNavigate();
 
@@ -85,7 +93,8 @@ export default function MapPage(){
     const complaintMarkers = complaints.map((complaint)=>{
         let markerIcon;
         if(complaint.severityLabel === 'LOW') markerIcon = greenIcon;
-        else if(complaint.severityLabel === 'MEDIUM') markerIcon = orangeIcon;
+        else if(complaint.severityLabel === 'MEDIUM') markerIcon = yellowIcon;
+        else if(complaint.severityLabel === 'HIGH') markerIcon = orangeIcon;
         else markerIcon = redIcon;
         
         return {
