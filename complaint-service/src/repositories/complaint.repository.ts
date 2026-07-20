@@ -67,7 +67,7 @@ export const createComplaint = async (data: CreateComplaintDto) => {
         savedMedia = await tx.insert(complaintMedia).values(mediaValues).returning();
       }
       //3. TODO get warduuid for complaint by point in polygon query
-      return { ...newComplaint, media: savedMedia };
+      return newComplaint as unknown as Complaint;
     });
   } catch (error) {
     console.dir(error, { depth: null });

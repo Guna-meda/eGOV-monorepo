@@ -98,22 +98,22 @@ export default function ComplaintPage() {
               size="small"
             />
 
-            <Chip
-              label={complaint.severityLabel ?? "Unknown"}
-              color={
-                complaint.severityLabel === "HIGH"
-                  ? "error"
-                  : complaint.severityLabel === "MEDIUM"
-                  ? "warning"
-                  : "success"
-              }
-              size="small"
-            />
 
             <Chip
-              label={complaint.mlStatus}
-              variant="outlined"
               size="small"
+              label={complaint.severityLabel}
+              sx={{
+                fontWeight: 700,
+                color: "common.white",
+                bgcolor:
+                  complaint.severityLabel === "LOW"
+                    ? "success.main"
+                    : complaint.severityLabel === "MEDIUM"
+                    ? "warning.light"
+                    : complaint.severityLabel === "HIGH"
+                    ? "warning.main"
+                    : "error.main",
+              }}
             />
           </Stack>
 
