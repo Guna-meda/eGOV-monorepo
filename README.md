@@ -6,9 +6,10 @@ This repository contains three Python/FastAPI services all served under one comm
 Core functionality:
 - Accepts complaint text and analyzes it through `POST /analyze`.
 - Predicts the most likely grievance service/category.
-- Returns top service suggestions - menupath (category), serviceCode(subcategory) with confidence scores.
+- Returns top 3 service suggestions - menupath (category), serviceCode(subcategory) with confidence scores.
 - Computes complaint urgency (`low`, `medium`, `high`, `critical`) with urgency signals.
-- Flags potential mismatch between selected menu path and predicted category.
+- Flags potential mismatch between selected menu path and predicted menupath, and selected serviceCode and predicted ServiceCode.
+- This mismatch is flagged only if the user selected values do not match the top 3 suggestions.
 
 Test endpoint: `POST /analyze` using sample complaint text in “Try it out”.
 
@@ -26,8 +27,8 @@ Core functionality:
 - Loads trained ML artifacts (CatBoost model, TF-IDF vectorizer, normalization data) on startup.
 - Predicts complaint severity via `POST /severity`.
 - Returns `severity_score` and `severity_label` for each request.
-- Exposes model/service health through `GET /health` and `GET /severity/health`.
+- Exposes model/service health through `GET /severity/health`.
 
 Test endpoint: `POST /severity` with a valid severity request payload.
 
-The main Python server endpoint: `https://ml-services-rxcs.onrender.com`
+The main Python server endpoint: `https://ml-services-rxcs.onrender.com/docs`
