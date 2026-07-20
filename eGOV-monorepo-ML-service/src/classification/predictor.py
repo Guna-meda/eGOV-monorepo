@@ -348,7 +348,11 @@ def _selected_menu_path(selected_service_code: str | None) -> str | None:
     return menu_paths.get(normalized)
 
 
-def predict(text: str, selected_menu_path: str | None = None) -> dict:
+def predict(
+    text: str,
+    selected_menu_path: str | None = None,
+    selected_service_code: str | None = None,
+) -> dict:
     model = _load_model()
     menu_lookup = _load_menu_lookup()
     classes, probabilities = _predict_probabilities(model, text)
@@ -372,8 +376,6 @@ def predict(text: str, selected_menu_path: str | None = None) -> dict:
     second_confidence = suggestions[1]["confidence"] if len(suggestions) > 1 else 0.0
     low_confidence = top_confidence < 0.5 or (top_confidence - second_confidence) < 0.1
 
-    user_menu_path = selected_menu_path
-
     urgency, urgency_signals = _urgency(text)
 
     return {
@@ -385,8 +387,12 @@ def predict(text: str, selected_menu_path: str | None = None) -> dict:
         "suggested_service_codes": suggestions,
         "confidence": [suggestion["confidence"] for suggestion in suggestions],
         "low_confidence": low_confidence,
-        "possible_mismatch": check_possible_mismatch(
-            user_menu_path,
+        "menu_path_mismatch": check_possible_mismatch(
+            selected_menu_path,
             best["menuPath"],
+        ),
+        "service_code_mismatch": check_possible_mismatch(
+            selected_service_code,
+            best["serviceCode"],
         ),
     }

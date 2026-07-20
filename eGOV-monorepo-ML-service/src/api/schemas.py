@@ -5,6 +5,7 @@ from typing import Literal, Optional
 class AnalyzeRequest(BaseModel):
     text: str
     selected_menu_path: Optional[str] = None
+    selected_service_code: Optional[str] = None
 
 
 class SuggestedService(BaseModel):
@@ -24,4 +25,5 @@ class AnalyzeResponse(BaseModel):
     suggested_service_codes: list[SuggestedService]
     confidence: list[float]
     low_confidence: bool
-    possible_mismatch: bool
+    menu_path_mismatch: bool
+    service_code_mismatch: bool
