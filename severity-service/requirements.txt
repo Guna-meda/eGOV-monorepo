@@ -4,6 +4,14 @@ uvicorn==0.30.6
 
 catboost==1.2.7
 
+sentence-transformers==3.0.1
+
+transformers==4.44.2
+
+torch==2.4.1
+
+huggingface_hub==0.24.6
+
 scikit-learn==1.5.2
 
 numpy==2.1.1
