@@ -1,137 +1,210 @@
-import { useRef, useState, useEffect } from "react";
-import { Form, useActionData, useNavigation, useSubmit } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  useSubmit,
+} from "react-router";
+
 import {
   Alert,
   Box,
   Button,
-  IconButton,
   Stack,
-  TextField,
+  Step,
+  StepLabel,
+  Stepper,
+  Typography
 } from "@mui/material";
-import { CloudUpload, Delete, LocationOn } from "@mui/icons-material";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+
+import DescriptionStep from "../components/GrievanceWizard/DescriptionStep";
+import CategoryStep from "../components/GrievanceWizard/CategoryStep";
+import LocationStep from "../components/GrievanceWizard/LocationStep";
+import PhotosStep, {
+  type PhotoState,
+} from "../components/GrievanceWizard/PhotosStep";
+import ReviewStep from "../components/GrievanceWizard/ReviewStep";
 
 type ActionData = {
   ok: boolean;
   message?: string;
 };
 
-type PhotoState = {
-  file: File;
-  preview: string;
+type Location = {
+  lat: number;
+  lng: number;
 };
 
-const FIXED_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+type FormState = {
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  location: Location | null;
+  photos: PhotoState[];
+};
 
+const INITIAL_FORM: FormState = {
+  title: "",
+  description: "",
+  category: "",
+  subcategory: "",
+  location: null,
+  photos: [],
+};
+
+const STEPS = [
+  "Description",
+  "Category",
+  "Location",
+  "Photos",
+  "Review",
+];
+
+const FIXED_USER_ID =
+  "550e8400-e29b-41d4-a716-446655440000";
+
+  
 export default function GrievanceForm() {
-  const actionData = useActionData() as ActionData | undefined;
-  const navigation = useNavigation();
+  const [submitted, setSubmitted] = useState(false);
   const submit = useSubmit();
+  const navigation = useNavigation();
+  const actionData = useActionData() as
+    | ActionData
+    | undefined;
 
-  const isSubmitting = navigation.state === "submitting";
+  const isSubmitting =
+    navigation.state === "submitting";
 
   const formRef = useRef<HTMLFormElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const [photos, setPhotos] = useState<PhotoState[]>([]);
-  const [location, setLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [step, setStep] = useState(0);
+
+  const [form, setForm] =
+    useState<FormState>(INITIAL_FORM);
+
+  function handleNewComplaint() {
+    form.photos.forEach((photo) =>
+      URL.revokeObjectURL(photo.preview)
+    );
+
+    setForm(INITIAL_FORM);
+    setStep(0);
+    setSubmitted(false);
+
+    formRef.current?.reset();
+  }
+  // -----------------------
+  // Reset after success
+  // -----------------------
 
   useEffect(() => {
-    if (actionData?.ok === true) {
-      formRef.current?.reset();
+    if (!actionData?.ok) return;
 
-      photos.forEach((photo) =>
-        URL.revokeObjectURL(photo.preview)
-      );
+    setSubmitted(true);
+  }, [actionData?.ok]);
 
-      setPhotos([]);
-      setLocation(null);
-
-      if (photoInputRef.current) {
-        photoInputRef.current.value = "";
-      }
-    }
-  }, [actionData]);
+  // cleanup previews
 
   useEffect(() => {
     return () => {
-      photos.forEach((photo) =>
+      form.photos.forEach((photo) =>
         URL.revokeObjectURL(photo.preview)
       );
     };
-  }, []);
+  }, [form.photos]);
 
-  function handlePhotoChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const files = Array.from(e.target.files ?? []);
+  // -----------------------
+  // Navigation
+  // -----------------------
 
-    const newPhotos = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-
-    setPhotos((prev) => [...prev, ...newPhotos]);
-
-    if (photoInputRef.current) {
-      photoInputRef.current.value = "";
-    }
-  }
-
-  function removePhoto(index: number) {
-    setPhotos((prev) => {
-      URL.revokeObjectURL(prev[index].preview);
-
-      return prev.filter((_, i) => i !== index);
-    });
-  }
-
-  function handleShareLocation() {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported");
-      return;
-    }
-
-    setLoadingLocation(true);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-
-        setLoadingLocation(false);
-      },
-      () => {
-        alert("Could not get location");
-        setLoadingLocation(false);
-      }
+  function next() {
+    setStep((s) =>
+      Math.min(s + 1, STEPS.length - 1)
     );
   }
 
-  function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
+  function back() {
+    setStep((s) => Math.max(s - 1, 0));
+  }
 
-    const fd = new FormData(e.currentTarget);
+  // -----------------------
+  // Validation
+  // -----------------------
 
-    if (location) {
-      fd.set("latitude", String(location.lat));
-      fd.set("longitude", String(location.lng));
+  const canContinue = (() => {
+    switch (step) {
+      case 0:
+        return (
+          form.title.trim() !== "" &&
+          form.description.trim() !== ""
+        );
+
+      case 1:
+        return (
+          form.category !== "" &&
+          form.subcategory !== ""
+        );
+
+      case 2:
+        return form.location !== null;
+
+      case 3:
+      case 4:
+        return true;
+
+      default:
+        return false;
+    }
+  })();
+
+  // -----------------------
+  // Submit
+  // -----------------------
+
+  function handleSubmit() {
+    const fd = new FormData();
+
+    fd.append("userId", FIXED_USER_ID);
+    fd.append(
+      "originalTitle",
+      form.title
+    );
+    fd.append(
+      "description",
+      form.description
+    );
+
+    fd.append(
+      "category",
+      form.category
+    );
+
+    fd.append(
+      "subcategory",
+      form.subcategory
+    );
+
+    if (form.location) {
+      fd.append(
+        "latitude",
+        String(form.location.lat)
+      );
+
+      fd.append(
+        "longitude",
+        String(form.location.lng)
+      );
     }
 
-    photos.forEach((photo) => {
+    form.photos.forEach((photo) =>
       fd.append(
         "images",
         photo.file,
         photo.file.name
-      );
-    });
+      )
+    );
 
     submit(fd, {
       method: "post",
@@ -139,151 +212,243 @@ export default function GrievanceForm() {
     });
   }
 
-  return (
-    <Form
-      method="post"
-      onSubmit={handleSubmit}
-      ref={formRef}
-    >
-      <Stack spacing={2} sx={{ flexGrow: 1 }}>
-        <input
-          type="hidden"
-          name="userId"
-          value={FIXED_USER_ID}
+  // -----------------------
+  // Current Step
+  // -----------------------
+
+  function renderStep() {
+    switch (step) {
+      case 0:
+        return (
+          <DescriptionStep
+            title={form.title}
+            description={form.description}
+            disabled={isSubmitting}
+            onTitleChange={(title) =>
+              setForm((f) => ({
+                ...f,
+                title,
+              }))
+            }
+            onDescriptionChange={(
+              description
+            ) =>
+              setForm((f) => ({
+                ...f,
+                description,
+              }))
+            }
+          />
+        );
+
+      case 1:
+        return (
+          <CategoryStep
+            category={form.category}
+            subcategory={form.subcategory}
+            disabled={isSubmitting}
+            onCategoryChange={(
+              category
+            ) =>
+              setForm((f) => ({
+                ...f,
+                category,
+                subcategory: "",
+              }))
+            }
+            onSubcategoryChange={(
+              subcategory
+            ) =>
+              setForm((f) => ({
+                ...f,
+                subcategory,
+              }))
+            }
+          />
+        );
+
+      case 2:
+        return (
+          <LocationStep
+            location={form.location}
+            disabled={isSubmitting}
+            onLocationChange={(
+              location
+            ) =>
+              setForm((f) => ({
+                ...f,
+                location,
+              }))
+            }
+          />
+        );
+
+      case 3:
+        return (
+          <PhotosStep
+            photos={form.photos}
+            disabled={isSubmitting}
+            onPhotosChange={(photos) =>
+              setForm((f) => ({
+                ...f,
+                photos,
+              }))
+            }
+          />
+        );
+
+      case 4:
+        return (
+          <ReviewStep
+            title={form.title}
+            description={
+              form.description
+            }
+            category={form.category}
+            subcategory={
+              form.subcategory
+            }
+            location={form.location}
+            photos={form.photos}
+          />
+        );
+
+      default:
+        return null;
+    }
+  }
+  if (submitted) {
+    return (
+      <Stack
+        spacing={4}
+        sx={{
+          alignItems: "center", 
+          justifyContent: "center",
+          minHeight: "70vh",
+          px: 3,
+          textAlign: "center",
+        }}
+      >
+        <CheckCircleRoundedIcon
+          color="success"
+          sx={{ fontSize: 88 }}
         />
 
-        {actionData?.ok === true && (
-          <Alert severity="success">
-            Grievance submitted successfully.
-          </Alert>
-        )}
+        <Stack spacing={1}>
+          <Typography variant="h5" sx={{fontWeight: 600}}>
+            Complaint Submitted
+          </Typography>
 
-        {actionData?.ok === false && (
-          <Alert severity="error">
+          <Typography
+            variant="body1"
+            color="text.secondary"
+          >
+            Your complaint has been submitted successfully.
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            We'll review it and keep you updated on its progress.
+          </Typography>
+        </Stack>
+
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleNewComplaint}
+        >
+          Submit Another Complaint
+        </Button>
+      </Stack>
+    );
+  }
+  return (
+    <Form
+      ref={formRef}
+      method="post"
+      encType="multipart/form-data"
+      onSubmit={(e) => e.preventDefault()}
+    >
+      <Stack spacing={3}>
+        {actionData?.message && (
+          <Alert
+            severity={actionData.ok ? "success" : "error"}
+          >
             {actionData.message}
           </Alert>
         )}
 
-        <TextField
-          name="originalTitle"
-          label="Title"
-          required
-          fullWidth
-          disabled={isSubmitting}
-          size="small"
-        />
+      <Stepper activeStep={step} alternativeLabel>
+        {STEPS.map((_, index) => (
+          <Step key={index}>
+            <StepLabel />
+          </Step>
+        ))}
+      </Stepper>
 
-        <TextField
-          name="description"
-          label="Description"
-          required
-          fullWidth
-          multiline
-          minRows={4}
-          disabled={isSubmitting}
-          size="small"
-        />
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        align="center"
+      >
+        Step {step + 1} of {STEPS.length}
+      </Typography>
 
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<LocationOn fontSize="small" />}
-            onClick={handleShareLocation}
-            disabled={loadingLocation || isSubmitting}
-            color={location ? "success" : "primary"}
-            sx={{
-              flex: 1,
-              fontSize: "0.8rem",
-            }}
-          >
-            {loadingLocation
-              ? "Fetching..."
-              : location
-              ? "Location added"
-              : "Add location"}
-          </Button>
-
-          <Button
-            component="label"
-            variant="outlined"
-            startIcon={<CloudUpload fontSize="small" />}
-            disabled={isSubmitting}
-            color={
-              photos.length > 0
-                ? "success"
-                : "primary"
-            }
-            sx={{
-              flex: 1,
-              fontSize: "0.8rem",
-            }}
-          >
-            {photos.length > 0
-              ? `${photos.length} photo(s) added`
-              : "Add photos"}
-
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={handlePhotoChange}
-            />
-          </Button>
+      <Typography
+        variant="h6"
+        align="center"
+        sx={{fontWeight: 600}}
+      >
+        {STEPS[step]}
+      </Typography>
+        <Box
+          sx={{
+            minHeight: 350,
+          }}
+        >
+          {renderStep()}
         </Box>
 
-        {photos.length > 0 && (
-          <Stack spacing={1}>
-            {photos.map((photo, index) => (
-              <Box
-                key={`${photo.file.name}-${index}`}
-                sx={{ position: "relative" }}
-              >
-                <Box
-                  component="img"
-                  src={photo.preview}
-                  alt={`preview-${index}`}
-                  sx={{
-                    width: "100%",
-                    maxHeight: 180,
-                    objectFit: "cover",
-                    borderRadius: 2,
-                    display: "block",
-                  }}
-                />
-
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    removePhoto(index)
-                  }
-                  sx={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    bgcolor: "background.paper",
-                    boxShadow: 1,
-                  }}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </Box>
-            ))}
-          </Stack>
-        )}
-
-        <Button
-          type="submit"
-          variant="contained"
-          fullWidth
-          disabled={isSubmitting}
-          size="large"
+        <Stack
+          direction="row"
+          sx={{justifyContent: "space-between"}}
+          spacing={2}
         >
-          {isSubmitting
-            ? "Submitting..."
-            : "Submit Grievance"}
-        </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            disabled={step === 0 || isSubmitting}
+            onClick={back}
+          >
+            Back
+          </Button>
+
+          {step === STEPS.length - 1 ? (
+            <Button
+              type="button"
+              variant="contained"
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+            >
+              {isSubmitting
+                ? "Submitting..."
+                : "Submit Complaint"}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="contained"
+              disabled={
+                !canContinue || isSubmitting
+              }
+              onClick={next}
+            >
+              Next
+            </Button>
+          )}
+        </Stack>
       </Stack>
     </Form>
   );
