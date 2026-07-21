@@ -1,72 +1,75 @@
-from pathlib import Path
+import os
+import joblib
 
 from catboost import CatBoostRegressor
-from sentence_transformers import SentenceTransformer
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+MODEL_PATH = os.path.join(
+    BASE_DIR,
+    "models",
+    "catboost_severity.cbm"
+)
+
+TFIDF_PATH = os.path.join(
+    BASE_DIR,
+    "models",
+    "tfidf.pkl"
+)
+
+NORMALIZATION_PATH = os.path.join(
+    BASE_DIR,
+    "models",
+    "normalization.pkl"
+)
 
 
 class ModelLoader:
-    """
-    Loads and provides access to the ML artifacts
-    used by the Severity Service.
-    """
 
-    _model = None
-    _embedder = None
+    model = None
+    vectorizer = None
+    normalization = None
 
     @classmethod
     def load(cls):
-        """
-        Load the CatBoost model and Sentence Transformer
-        only once during application startup.
-        """
 
-        if cls._model is None:
+        print("Looking for:")
+        print(MODEL_PATH)
+        print(TFIDF_PATH)
+        print(NORMALIZATION_PATH)
 
-            model_path = (
-            Path(__file__).resolve().parent.parent
-             / "models"
-             / "catboost_model.cbm"
-            )
+        if not os.path.isfile(MODEL_PATH):
+            raise FileNotFoundError(f"Model not found:\n{MODEL_PATH}")
 
-            print(f"Loading CatBoost model from: {model_path}")
+        if not os.path.isfile(TFIDF_PATH):
+            raise FileNotFoundError(f"TF-IDF not found:\n{TFIDF_PATH}")
 
-            cls._model = CatBoostRegressor()
-            cls._model.load_model(str(model_path))
+        if not os.path.isfile(NORMALIZATION_PATH):
+            raise FileNotFoundError(f"Normalization not found:\n{NORMALIZATION_PATH}")
 
-            print("✓ CatBoost model loaded successfully.")
+        cls.model = CatBoostRegressor()
+        cls.model.load_model(MODEL_PATH)
 
-        if cls._embedder is None:
+        cls.vectorizer = joblib.load(TFIDF_PATH)
 
-            print("Loading Sentence Transformer...")
+        cls.normalization = joblib.load(NORMALIZATION_PATH)
 
-            cls._embedder = SentenceTransformer(
-                "all-MiniLM-L6-v2"
-            )
-
-            print("✓ Sentence Transformer loaded successfully.")
+        print("All ML artifacts loaded successfully.")
 
     @classmethod
     def get_model(cls):
-        """
-        Returns the loaded CatBoost model.
-        """
-
-        if cls._model is None:
-            raise RuntimeError(
-                "CatBoost model has not been loaded."
-            )
-
-        return cls._model
+        if cls.model is None:
+            cls.load()
+        return cls.model
 
     @classmethod
-    def get_embedder(cls):
-        """
-        Returns the loaded Sentence Transformer.
-        """
+    def get_vectorizer(cls):
+        if cls.vectorizer is None:
+            cls.load()
+        return cls.vectorizer
 
-        if cls._embedder is None:
-            raise RuntimeError(
-                "Sentence Transformer has not been loaded."
-            )
-
-        return cls._embedder
+    @classmethod
+    def get_normalization(cls):
+        if cls.normalization is None:
+            cls.load()
+        return cls.normalization

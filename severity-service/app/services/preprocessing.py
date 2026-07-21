@@ -15,22 +15,52 @@ class TextPreprocessor:
 
         text = str(text)
 
-        # Lowercase
+        # lowercase
         text = text.lower()
 
-        # Remove URLs
+        # remove urls
         text = re.sub(r"http\S+", " ", text)
 
-        # Remove Emails
+        # remove emails
         text = re.sub(r"\S+@\S+", " ", text)
 
-        # Remove Numbers
+        # remove numbers
         text = re.sub(r"\d+", " ", text)
 
-        # Keep only alphabets and spaces
+        # remove punctuation
         text = re.sub(r"[^a-zA-Z ]", " ", text)
 
-        # Remove extra spaces
-        text = re.sub(r"\s+", " ", text).strip()
+        # remove extra spaces
+        text = re.sub(r"\s+", " ", text)
 
-        return text
+        return text.strip()
+
+    @staticmethod
+    def word_count(text: str) -> int:
+
+        text = TextPreprocessor.clean(text)
+
+        return len(text.split())
+
+    @staticmethod
+    def character_count(text: str) -> int:
+
+        text = TextPreprocessor.clean(text)
+
+        return len(text)
+
+    @staticmethod
+    def contains_numbers(text: str) -> bool:
+
+        if text is None:
+            return False
+
+        return bool(re.search(r"\d", str(text)))
+
+    @staticmethod
+    def contains_special_characters(text: str) -> bool:
+
+        if text is None:
+            return False
+
+        return bool(re.search(r"[^a-zA-Z0-9 ]", str(text)))
