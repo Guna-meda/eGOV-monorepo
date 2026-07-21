@@ -1,5 +1,5 @@
-const BASE = import.meta.env.VITE_API_HOST ?? "localhost";
-const PORT = import.meta.env.VITE_API_PORT ?? "5001";
+const url = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 type UploadSignature = {
   timestamp: number;
   signature: string;
@@ -9,7 +9,7 @@ type UploadSignature = {
 }
 
 export async function getSignature(){
-    const res = await fetch(`http://${BASE}:${PORT}/api/v1/media/upload-signature`, {
+    const res = await fetch(`${url}/api/v1/media/upload-signature`, {
         method: "POST",
         headers: {
             'Content-Type': 'application/json', 

@@ -1,10 +1,9 @@
 import type {CreateComplaintDto, Complaint} from "@egov/shared"
 
-const BASE = import.meta.env.VITE_API_HOST ?? "localhost";
-const PORT = import.meta.env.VITE_API_PORT ?? "5001";
+const url = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 export default async function uploadComplaint(data:CreateComplaintDto){
-  const res = await fetch(`http://${BASE}:${PORT}/api/v1/complaints/`, {
+  const res = await fetch(`${url}/api/v1/complaints/`, {
     method: "POST",
     headers: {
         'Content-Type': 'application/json', 
@@ -14,7 +13,7 @@ export default async function uploadComplaint(data:CreateComplaintDto){
   return res;
 }
 export async function getComplaintById(complaintId:string){
-  const res = await fetch(`http://${BASE}:${PORT}/api/v1/complaints/${complaintId}`);
+  const res = await fetch(`${url}/api/v1/complaints/${complaintId}`);
   if(!res.ok) throw new Error("Failed to fetch complaint");
   const complaint = await res.json();
   
