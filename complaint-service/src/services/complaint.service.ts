@@ -21,7 +21,7 @@ const fetchSeverity = async (complaint: Complaint) => {
 
     if (!response.ok) {
       logger.error(`Severity call failed for ${complaint.id}: ${response.status}`);
-      return null;
+      throw new Error(`Severity call failed for ${complaint.id}: ${response.status}`);
     }
 
     const data = await response.json();

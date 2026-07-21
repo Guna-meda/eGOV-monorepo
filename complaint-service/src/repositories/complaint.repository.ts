@@ -121,7 +121,7 @@ export const getComplaintById = async (
         FROM complaints c
         LEFT JOIN boundary_layers b
           ON c.ward_id = b.id
-        WHERE c.id = ${id}
+        WHERE c.id = ${id} AND c.ward_id IS NOT NULL
         LIMIT 1;
       `);
       const complaint = result.rows[0];
@@ -180,7 +180,8 @@ export async function getComplaintsInBounds(bounds: Bounds) {
         FROM complaints c
         LEFT JOIN boundary_layers b
           ON c.ward_id = b.id
-        WHERE ST_Within(
+          WHERE c.ward_id IS NOT NULL
+          AND ST_Within(
           c.location,
           ST_MakeEnvelope(
             ${west},
