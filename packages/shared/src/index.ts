@@ -20,7 +20,8 @@ export type {
   Ward,
   WardProperties,
   WardAnalyticsResponse,
-  ServiceAnalytics
+  ServiceAnalytics,
+  AnalyzeResponse
 } from './types/complaint.types.js';
 
 // db

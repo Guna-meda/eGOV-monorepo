@@ -26,6 +26,9 @@ import PhotosStep, {
 } from "../components/GrievanceWizard/PhotosStep";
 import ReviewStep from "../components/GrievanceWizard/ReviewStep";
 
+import {analyzeComplaint} from "../api/complaintApi"
+import type {AnalyzeResponse} from '@egov/shared'
+
 type ActionData = {
   ok: boolean;
   message?: string;
@@ -54,20 +57,24 @@ const INITIAL_FORM: FormState = {
   photos: [],
 };
 
-const STEPS = [
-  "Description",
-  "Category",
-  "Location",
-  "Photos",
-  "Review",
+const STEP_TITLES = [
+  "Describe Your Complaint",
+  "Select Category & Subcategory",
+  "Choose Location",
+  "Upload Attachments",
+  "Review Complaint",
 ];
 
 const FIXED_USER_ID =
   "550e8400-e29b-41d4-a716-446655440000";
 
+
   
 export default function GrievanceForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [prediction, setPrediction] = useState<AnalyzeResponse | null>(null);
+
   const submit = useSubmit();
   const navigation = useNavigation();
   const actionData = useActionData() as
@@ -84,6 +91,18 @@ export default function GrievanceForm() {
   const [form, setForm] =
     useState<FormState>(INITIAL_FORM);
 
+  async function analyzeDescription() {
+    setAnalyzing(true);
+
+    try {
+      const predictionData = await analyzeComplaint(form.description);
+      console.log(predictionData);
+      setPrediction(predictionData);
+    } 
+    finally {
+      setAnalyzing(false);
+    }
+  }
   function handleNewComplaint() {
     form.photos.forEach((photo) =>
       URL.revokeObjectURL(photo.preview)
@@ -119,10 +138,17 @@ export default function GrievanceForm() {
   // Navigation
   // -----------------------
 
-  function next() {
-    setStep((s) =>
-      Math.min(s + 1, STEPS.length - 1)
-    );
+  async function next() {
+    if (step === 0) {
+      try {
+        await analyzeDescription();
+      } catch (err) {
+        console.error(err);
+        // Continue even if analysis fails
+      }
+    }
+
+    setStep((s) => Math.min(s + 1, STEP_TITLES.length - 1));
   }
 
   function back() {
@@ -247,6 +273,7 @@ export default function GrievanceForm() {
             category={form.category}
             subcategory={form.subcategory}
             disabled={isSubmitting}
+            prediction={prediction!}
             onCategoryChange={(
               category
             ) =>
@@ -364,73 +391,124 @@ export default function GrievanceForm() {
       </Stack>
     );
   }
-  return (
-    <Form
-      ref={formRef}
-      method="post"
-      encType="multipart/form-data"
-      onSubmit={(e) => e.preventDefault()}
-    >
-      <Stack spacing={3}>
-        {actionData?.message && (
-          <Alert
-            severity={actionData.ok ? "success" : "error"}
+return (
+  <Form
+    ref={formRef}
+    method="post"
+    encType="multipart/form-data"
+    onSubmit={(e) => e.preventDefault()}
+  >
+    <Stack sx={{ minHeight: "calc(100vh - 140px)" }}>
+
+      {/* Progress */}
+      <Box
+        sx={{
+          px: 3,
+          pt: 2,
+          pb: 3,
+          borderBottom: 1,
+          borderColor: "divider",
+        }}
+      >
+        <Stepper activeStep={step} alternativeLabel>
+          {STEP_TITLES.map((_, index) => (
+            <Step key={index}>
+              <StepLabel />
+            </Step>
+          ))}
+        </Stepper>
+      </Box>
+
+      {/* Form Content */}
+      <Box
+        sx={{
+          flex: 1,
+          px: 3,
+          py: 4,
+        }}
+      >
+        <Stack spacing={4}>
+
+          {actionData?.message && (
+            <Alert
+              severity={
+                actionData.ok
+                  ? "success"
+                  : "error"
+              }
+            >
+              {actionData.message}
+            </Alert>
+          )}
+
+          <Stack spacing={1}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Step {step + 1} of {STEP_TITLES.length}
+            </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700 }}
           >
-            {actionData.message}
-          </Alert>
-        )}
+            {STEP_TITLES[step]}
+          </Typography>
+          </Stack>
 
-      <Stepper activeStep={step} alternativeLabel>
-        {STEPS.map((_, index) => (
-          <Step key={index}>
-            <StepLabel />
-          </Step>
-        ))}
-      </Stepper>
+          <Box
+            sx={{
+              minHeight: 420,
+            }}
+          >
+            {renderStep()}
+          </Box>
 
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        align="center"
+        </Stack>
+      </Box>
+
+      {/* Bottom Buttons */}
+      <Box
+        sx={{
+          px: 3,
+          py: 2,
+          borderTop: 1,
+          borderColor: "divider",
+        }}
       >
-        Step {step + 1} of {STEPS.length}
-      </Typography>
-
-      <Typography
-        variant="h6"
-        align="center"
-        sx={{fontWeight: 600}}
-      >
-        {STEPS[step]}
-      </Typography>
-        <Box
-          sx={{
-            minHeight: 350,
-          }}
-        >
-          {renderStep()}
-        </Box>
-
         <Stack
           direction="row"
-          sx={{justifyContent: "space-between"}}
           spacing={2}
         >
           <Button
-            type="button"
+            fullWidth
+            size="large"
             variant="outlined"
-            disabled={step === 0 || isSubmitting}
+            disabled={
+              step === 0 ||
+              isSubmitting
+            }
             onClick={back}
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+            }}
           >
             Back
           </Button>
 
-          {step === STEPS.length - 1 ? (
+          {step === STEP_TITLES.length - 1 ? (
             <Button
-              type="button"
+              fullWidth
+              size="large"
               variant="contained"
               disabled={isSubmitting}
               onClick={handleSubmit}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+              }}
             >
               {isSubmitting
                 ? "Submitting..."
@@ -438,18 +516,29 @@ export default function GrievanceForm() {
             </Button>
           ) : (
             <Button
-              type="button"
+              fullWidth
+              size="large"
               variant="contained"
               disabled={
-                !canContinue || isSubmitting
+                !canContinue ||
+                isSubmitting ||
+                analyzing
               }
               onClick={next}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+              }}
             >
-              Next
+              {analyzing
+                ? "Analyzing..."
+                : "Next"}
             </Button>
           )}
         </Stack>
-      </Stack>
-    </Form>
-  );
+      </Box>
+
+    </Stack>
+  </Form>
+)
 }

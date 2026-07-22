@@ -137,3 +137,28 @@ export interface ServiceAnalytics {
 
 // The /recurrence/:wardName endpoint returns one entry per service code
 export type WardAnalyticsResponse = ServiceAnalytics[];
+
+export interface SuggestedServiceCode {
+  serviceCode: string;
+  name: string;
+  menuPath: string;
+  category: string;
+  confidence: number;
+}
+
+export interface AnalyzeResponse {
+  urgency: "low" | "medium" | "high";
+  urgency_signals: string[];
+
+  predicted_category: string;
+  predicted_service_code: string;
+  predicted_menu_path: string;
+
+  suggested_service_codes: SuggestedServiceCode[];
+
+  confidence: number[];
+  low_confidence: boolean;
+
+  menu_path_mismatch: boolean;
+  service_code_mismatch: boolean;
+}
