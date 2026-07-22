@@ -19,7 +19,6 @@ class SuggestedService(BaseModel):
 class AnalyzeResponse(BaseModel):
     urgency: Literal["high", "medium", "low"]
     urgency_signals: list[str]
-    predicted_category: str
     predicted_service_code: str
     predicted_menu_path: str
     suggested_service_codes: list[SuggestedService]

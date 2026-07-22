@@ -358,20 +358,25 @@ def predict(
     classes, probabilities = _predict_probabilities(model, text)
 
     ranked_indices = np.argsort(probabilities)[::-1]
-    suggestions = []
+    ranked_suggestions = []
 
     for index in ranked_indices:
         code = str(classes[index])
         if code not in service_lookup:
             continue
-        suggestions.append(_service_suggestion(code, probabilities[index], menu_lookup))
-        if len(suggestions) == 3:
-            break
+        ranked_suggestions.append(_service_suggestion(code, probabilities[index], menu_lookup))
 
-    if not suggestions:
+    if not ranked_suggestions:
         raise ValueError("Model predictions did not match any serviceCode in Rainmaker MDMS data.")
 
-    best = suggestions[0]
+    best = ranked_suggestions[0]
+    predicted_menu_path = best["menuPath"]
+    suggestions = [
+        suggestion
+        for suggestion in ranked_suggestions
+        if suggestion["menuPath"] == predicted_menu_path
+    ][:3]
+
     top_confidence = best["confidence"]
     second_confidence = suggestions[1]["confidence"] if len(suggestions) > 1 else 0.0
     low_confidence = top_confidence < 0.5 or (top_confidence - second_confidence) < 0.1
@@ -382,14 +387,13 @@ def predict(
         "urgency": urgency,
         "urgency_signals": urgency_signals,
         "predicted_service_code": best["serviceCode"],
-        "predicted_menu_path": best["menuPath"],
-        "predicted_category": best["menuPath"],
+        "predicted_menu_path": predicted_menu_path,
         "suggested_service_codes": suggestions,
         "confidence": [suggestion["confidence"] for suggestion in suggestions],
         "low_confidence": low_confidence,
         "menu_path_mismatch": check_possible_mismatch(
             selected_menu_path,
-            best["menuPath"],
+            predicted_menu_path,
         ),
         "service_code_mismatch": check_possible_mismatch(
             selected_service_code,
