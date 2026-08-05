@@ -28,8 +28,5 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# pickle files
-*.pkl
-
 # documents
 docs
