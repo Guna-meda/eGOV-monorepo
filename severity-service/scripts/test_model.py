@@ -18,29 +18,23 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
     try:
-        # Load both model and embedder
         ModelLoader.load()
-        print("✓ Models loaded successfully")
+        print("✓ CatBoost model loaded successfully")
 
-        # Test prediction with sample complaint
         request = SeverityRequest(
             complaint_id="TEST-001",
             description="Water pipe burst in residential area causing flooding. Urgent attention needed."
         )
 
         result = PredictionService.predict(request)
-        print(f"\nPrediction Result:")
+        print("\nPrediction Result:")
         print(f"  Complaint ID: {result['complaint_id']}")
         print(f"  Severity Score: {result['severity_score']}")
         print(f"  Severity Label: {result['severity_label']}")
 
     except Exception as exc:
-        print(f"Error: {exc}")
+        logging.exception("Model test failed")
         raise
-
-
-if __name__ == "__main__":
-    main()
 
 
 if __name__ == "__main__":

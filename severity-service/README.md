@@ -9,32 +9,35 @@ Endpoints:
 
 Model placement
 ----------------
-Place your trained CatBoost model in the service using one of these locations:
+The service expects a CatBoost model artifact at:
 
-1. Native CatBoost format (recommended):
-   `severity-service/models/catboost/catboost_severity.cbm`
-2. Pickle format (not recommended):
-   `severity-service/models/catboost/catboost_severity.pkl`
+- `severity-service/models/severity_model.cbm`
 
-If you use pickle, set `ALLOW_PICKLE_MODELS=1` before starting the service.
+Training and evaluation
+-----------------------
+A training script is provided for the SentenceTransformer + CatBoost pipeline.
 
-Running the service
--------------------
 Install dependencies:
 ```powershell
 cd severity-service
 python -m pip install -r requirements.txt
 ```
 
+Train the model from a labeled CSV dataset:
+```powershell
+cd severity-service
+python scripts/train_severity_model.py path\to\severity_dataset.csv
+```
+
+The script will save:
+- `severity-service/models/severity_model.cbm`
+- `severity-service/models/severity_training_metrics.json`
+
+Running the service
+-------------------
 Start the service:
 ```powershell
 cd severity-service
-uvicorn app.main:app --reload --port 8700
-```
-
-If you are using a pickle model:
-```powershell
-$env:ALLOW_PICKLE_MODELS = '1'
 uvicorn app.main:app --reload --port 8700
 ```
 
@@ -43,15 +46,8 @@ Test prediction:
 curl -X POST http://127.0.0.1:8700/severity/predict \
   -H "Content-Type: application/json" \
   -d '{
-    "category":"Water",
-    "subcategory":"Leak",
-    "category_confidence":2.5,
-    "ward_complaint_density":0.75,
-    "category_geohash_density":0.6,
-    "geohash_density":0.55,
-    "ward_category_density":0.45,
-    "has_escalation":false,
-    "sla_hours":48.0
+    "complaint_id":"TEST-001",
+    "description":"Water pipe burst in residential area causing flooding. Urgent attention needed."
   }'
 ```
 

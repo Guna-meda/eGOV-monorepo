@@ -1,7 +1,7 @@
-from pathlib import Path
-
 from catboost import CatBoostRegressor
 from sentence_transformers import SentenceTransformer
+
+from app.config import CATBOOST_MODEL_PATH
 
 
 class ModelLoader:
@@ -22,16 +22,10 @@ class ModelLoader:
 
         if cls._model is None:
 
-            model_path = (
-                Path(__file__).resolve().parent.parent
-                / "models"
-                / "severity_model.cbm"
-            )
-
-            print(f"Loading CatBoost model from: {model_path}")
+            print(f"Loading CatBoost model from: {CATBOOST_MODEL_PATH}")
 
             cls._model = CatBoostRegressor()
-            cls._model.load_model(str(model_path))
+            cls._model.load_model(str(CATBOOST_MODEL_PATH))
 
             print("✓ CatBoost model loaded successfully.")
 
