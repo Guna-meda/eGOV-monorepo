@@ -1,51 +1,46 @@
-"""Quick script to test the CatBoost model loader and prediction."""
+"""Quick script to test the CatBoost model and SentenceTransformer embedder."""
 from __future__ import annotations
 
-import os
-import json
+import sys
 import logging
 from pathlib import Path
 
-from app import model_loader
+# Add parent directory to path to import app
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.model_loader import ModelLoader
+from app.models import SeverityRequest
+from app.services.prediction_service import PredictionService
 
 
 def main() -> None:
+    """Load model and test prediction with sample complaint text."""
     logging.basicConfig(level=logging.INFO)
-    # Allow pickle models for this test (only run in trusted dev environment)
-    os.environ["ALLOW_PICKLE_MODELS"] = "1"
 
-    # Optionally override model path via env var
-    model_path = os.getenv(
-        "SEVERITY_MODEL_PATH",
-        str(
-            Path(__file__).resolve().parents[2]
-            / ".."
-            / "eGOV-monorepo-ML-service"
-            / "models"
-            / "severity_model"
-            / "catboost_severity.pkl"
-        ),
-    )
-
-    print("Using model path:", model_path)
-    model_loader.init_model(model_path)
-
-    features = {
-    "category": "Water",
-    "subcategory": "Leak",
-    "category_confidence": 2.5,
-    "ward_complaint_density": 0.75,
-    "category_geohash_density": 0.6,
-    "geohash_density": 0.55,
-    "ward_category_density": 0.45,
-    "has_escalation": False,
-    "sla_hours": 48.0,
-}
     try:
-        score = model_loader.predict(features)
-        print("Predicted severity:", score)
+        # Load both model and embedder
+        ModelLoader.load()
+        print("✓ Models loaded successfully")
+
+        # Test prediction with sample complaint
+        request = SeverityRequest(
+            complaint_id="TEST-001",
+            description="Water pipe burst in residential area causing flooding. Urgent attention needed."
+        )
+
+        result = PredictionService.predict(request)
+        print(f"\nPrediction Result:")
+        print(f"  Complaint ID: {result['complaint_id']}")
+        print(f"  Severity Score: {result['severity_score']}")
+        print(f"  Severity Label: {result['severity_label']}")
+
     except Exception as exc:
-        print("Prediction failed:", exc)
+        print(f"Error: {exc}")
+        raise
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":

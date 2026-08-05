@@ -73,11 +73,9 @@ async def health():
 
         "status": "healthy",
 
-        "model_loaded": ModelLoader.model is not None,
+        "model_loaded": ModelLoader._model is not None,
 
-        "vectorizer_loaded": ModelLoader.vectorizer is not None,
-
-        "normalization_loaded": ModelLoader.normalization is not None
+        "embedder_loaded": ModelLoader._embedder is not None
 
     }
 

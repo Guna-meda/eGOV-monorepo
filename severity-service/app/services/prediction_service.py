@@ -6,10 +6,6 @@ class PredictionService:
 
     @staticmethod
     def get_severity_label(score: float) -> str:
-        """
-        Convert numerical severity score
-        into a severity label.
-        """
 
         if score < 3:
             return "LOW"
@@ -27,12 +23,10 @@ class PredictionService:
     def predict(request):
 
         # ---------------------------------------------
-        # Build Feature Vector
+        # Generate Sentence Transformer Embedding
         # ---------------------------------------------
 
-        features = FeatureEngineering.build_features(
-            request
-        )
+        features = FeatureEngineering.build_features(request)
 
         # ---------------------------------------------
         # Load CatBoost Model
@@ -49,24 +43,15 @@ class PredictionService:
         severity_score = float(prediction[0])
 
         # ---------------------------------------------
-        # Clamp Score
+        # Clamp between 0 and 10
         # ---------------------------------------------
 
-        severity_score = max(
-            0.0,
-            min(
-                severity_score,
-                10.0
-            )
-        )
+        severity_score = max(0.0, min(severity_score, 10.0))
 
-        severity_score = round(
-            severity_score,
-            2
-        )
+        severity_score = round(severity_score, 2)
 
         # ---------------------------------------------
-        # Severity Label
+        # Convert score to label
         # ---------------------------------------------
 
         severity_label = PredictionService.get_severity_label(
@@ -74,15 +59,11 @@ class PredictionService:
         )
 
         # ---------------------------------------------
-        # Return JSON
+        # Response
         # ---------------------------------------------
 
         return {
-
             "complaint_id": request.complaint_id,
-
             "severity_score": severity_score,
-
             "severity_label": severity_label
-
         }
