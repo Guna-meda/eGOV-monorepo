@@ -1,1 +1,0 @@
-ALTER TABLE "complaints" DROP COLUMN "location";
