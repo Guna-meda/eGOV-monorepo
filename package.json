@@ -5,6 +5,11 @@
   "workspaces": [
     "packages/*",
     "complaint-service",
-    "frontend"
-  ]
+    "frontend",
+    "gis-service"
+  ],
+  "scripts": {
+    "db:generate": "npm --workspace @egov/shared run db:generate",
+    "db:migrate": "npm --workspace @egov/shared run db:migrate"
+  }
 }

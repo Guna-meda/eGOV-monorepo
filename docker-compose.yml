@@ -1,0 +1,119 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: grievance
+      POSTGRES_PASSWORD: grievance
+      POSTGRES_DB: grievance_db
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grievance -d grievance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: complaint-service/Dockerfile
+
+    working_dir: /workspace
+
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql://grievance:grievance@postgres:5432/grievance_db
+
+    command: >
+      sh -c "
+      npm run db:migrate
+      "
+
+    restart: "no"
+
+  complaint-service:
+    build:
+      context: .
+      dockerfile: complaint-service/Dockerfile
+
+    working_dir: /workspace/complaint-service
+
+    command: sh -c "npm run dev"
+
+    depends_on:
+          migrate:
+            condition: service_completed_successfully
+
+    ports:
+      - "5001:5001"
+
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
+      - /workspace/complaint-service/node_modules
+
+  gis-service:
+    build:
+      context: .
+      dockerfile: gis-service/Dockerfile
+
+    working_dir: /workspace/gis-service
+
+    command: sh -c "npm run dev"
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/shared/node_modules
+      - /workspace/gis-service/node_modules
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+
+    working_dir: /workspace/frontend
+
+    command: npm run dev -- --host 0.0.0.0
+
+    depends_on:
+      - complaint-service
+      - gis-service
+
+    ports:
+      - "5173:5173"
+
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/frontend/node_modules
+
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+
+volumes:
+  postgres-data:

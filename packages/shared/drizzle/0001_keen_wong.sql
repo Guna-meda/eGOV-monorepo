@@ -1,0 +1,1 @@
+ALTER TABLE "complaints" ADD CONSTRAINT "complaints_ward_id_boundary_layers_id_fk" FOREIGN KEY ("ward_id") REFERENCES "public"."boundary_layers"("id") ON DELETE set null ON UPDATE cascade;
