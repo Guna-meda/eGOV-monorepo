@@ -1,40 +1,6 @@
 import * as complaintRepository from '../repositories/complaint.repository.js';
 import { ApiError, logger } from '@egov/shared';
-import type { CreateComplaintDto, Bounds, Complaint } from '@egov/shared';
-
-const fetchSeverity = async (complaint: Complaint) => {
-  try {
-    const response = await fetch(`${process.env.ML_SERVICE_URL}/severity`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        complaint_id: complaint.id,
-        description: complaint.description,
-        category: complaint.category ?? 'Unknown',
-        subcategory: complaint.subcategory ?? 'Unknown',
-        ward: complaint.ward?.city ?? 'Unknown',
-        sla_hours: complaint.slaHours ?? 0,
-        status: complaint.status,
-        escalation_level: complaint.escalationLevel ?? 0,
-      }),
-    });
-
-    if (!response.ok) {
-      logger.error(`Severity call failed for ${complaint.id}: ${response.status}`);
-      throw new Error(`Severity call failed for ${complaint.id}: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    return {
-      severityScore: data.severity_score,
-      severityLabel: data.severity_label,
-    };
-  } catch (err) {
-    logger.error(`Severity call errored for ${complaint.id}: ${err}`);
-    return null;
-  }
-};
+import type { CreateComplaintDto, Bounds } from '@egov/shared';
 
 export const createComplaint = async (data: CreateComplaintDto) => {
   if (!data.originalTitle?.trim()) {
@@ -47,15 +13,6 @@ export const createComplaint = async (data: CreateComplaintDto) => {
 
   // category/subcategory/etc as part of `data` — nothing to enqueue here anymore.
   const complaint = await complaintRepository.createComplaint(data);
-
-  // Compute severity asynchronously without blocking the response.
-  void (async () => {
-    const severity = await fetchSeverity(complaint as Complaint);
-
-    if (severity) {
-      await complaintRepository.updateSeverity(complaint.id, severity);
-    }
-  })();
 
   logger.info(`Complaint created: ${complaint.id}`);
 
