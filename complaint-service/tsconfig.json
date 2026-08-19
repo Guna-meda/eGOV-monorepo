@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    "strict": true,
+
+    "esModuleInterop": true,
+    // "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+
+    "skipLibCheck": true,
+
+    // "paths": {
+    //   "@egov/shared": ["../packages/shared/src/index.ts"],
+    //   "@egov/shared/*": ["../packages/shared/src/*"]
+    // }
+  },
+
+  "include": ["src"]
+}

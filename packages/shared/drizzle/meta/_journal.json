@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784379581788,
+      "tag": "0000_rainy_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784383323604,
+      "tag": "0001_keen_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784529061353,
+      "tag": "0002_add_sla_escalation",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786899055505,
+      "tag": "0003_polite_shape",
+      "breakpoints": true
+    }
+  ]
+}
