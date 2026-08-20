@@ -2,13 +2,6 @@
 Consumes messages off save-pgr-request, calls classification-service and
 recurrence-service, and writes one row per complaint into ai_enrichment.
 
-KNOWN LIMITATION (flagged, not hidden): recurrence-service currently computes
-its /recurrence table from its own local historical CSVs, which are Bengaluru
-data -- unrelated to our loaded GCC/Chennai complaints. Lookups by our
-serviceCode will very likely miss. This still proves the real wiring end to
-end; recurrence_score/is_hotspot will just be null until recurrence-service
-is pointed at eg_pgr_service_v2 instead (separate follow-up task).
-
 Run:
     pip install kafka-python psycopg2-binary requests
 
@@ -40,6 +33,12 @@ GROUP_ID = "ai-enrichment-consumer"  # own consumer group -- independent of any
 CLASSIFICATION_URL = "http://localhost:8001/analyze"
 RECURRENCE_URL = "http://localhost:8000/api/v1/recurrence"
 MODEL_VERSION = "classification-service-sentencetransformer-catboost-v1"
+
+SERVICE_CODE_CROSSWALK = {
+    "RepairsToStormWaterDrain": "Storm  Water Drain(SWD)",
+    "NonBurningOfStreetLights": "Electrical",
+    "AbsenteeismOfSweepers": "Solid Waste (Garbage) Related",
+}
 
 _recurrence_cache = None  # populated once, on first use
 
@@ -79,7 +78,8 @@ def classify(description: str) -> dict:
 
 def lookup_recurrence(service_code: str) -> dict:
     lookup = get_recurrence_lookup()
-    row = lookup.get(service_code)
+    crosswalked_code = SERVICE_CODE_CROSSWALK.get(service_code, service_code)
+    row = lookup.get(crosswalked_code)
     if row is None:
         return {"recurrence_score": None, "is_hotspot": None}
     return {"recurrence_score": row["recurrence_score"], "is_hotspot": row["is_hotspot"]}
